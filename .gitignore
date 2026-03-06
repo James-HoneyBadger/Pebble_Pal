@@ -1,0 +1,17 @@
+node_modules/
+dist/
+www/
+ios-icons/
+*.log
+.DS_Store
+Thumbs.db
+# iOS build artifacts
+ios/App/Pods/
+ios/App/build/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+# Android build artifacts
+android/app/build/
+android/.gradle/
+android/build/
+android/local.properties

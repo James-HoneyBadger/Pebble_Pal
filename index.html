@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <title>🪨 My Pet Rock</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <h1>🪨 My Pet Rock</h1>
+      <div id="rock-name-display">
+        <span id="name-label">Rocky</span>
+        <button id="rename-btn" title="Rename" aria-label="Rename your rock">✏️</button>
+      </div>
+      <div id="header-meta">
+        <span id="age-display">Age: <span id="age">0</span> days</span>
+        <span class="meta-sep">·</span>
+        <span id="level-display">Lv. <span id="level">1</span></span>
+        <div id="xp-bar-wrap" title="Experience"><div id="xp-bar"></div></div>
+        <span id="xp-text">0 / 50 XP</span>
+      </div>
+    </header>
+
+    <div id="main-area">
+      <!-- Left: Stats + Trophies -->
+      <div id="left-panel">
+        <div id="stats-panel" class="panel">
+          <h2>Stats</h2>
+          <div class="stat">
+            <label>😊 Happiness</label>
+            <div class="stat-bar" role="progressbar" aria-label="Happiness" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"><div class="stat-fill happiness-fill" id="happiness-bar"></div></div>
+            <span class="stat-value" id="happiness-val">80</span>
+          </div>
+          <div class="stat">
+            <label>🍔 Fullness</label>
+            <div class="stat-bar" role="progressbar" aria-label="Fullness" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"><div class="stat-fill fullness-fill" id="fullness-bar"></div></div>
+            <span class="stat-value" id="fullness-val">70</span>
+          </div>
+          <div class="stat">
+            <label>⚡ Energy</label>
+            <div class="stat-bar" role="progressbar" aria-label="Energy" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"><div class="stat-fill energy-fill" id="energy-bar"></div></div>
+            <span class="stat-value" id="energy-val">100</span>
+          </div>
+          <div class="stat">
+            <label>✨ Cleanliness</label>
+            <div class="stat-bar" role="progressbar" aria-label="Cleanliness" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><div class="stat-fill cleanliness-fill" id="cleanliness-bar"></div></div>
+            <span class="stat-value" id="cleanliness-val">90</span>
+          </div>
+          <div class="stat">
+            <label>❤️ Bond</label>
+            <div class="stat-bar" role="progressbar" aria-label="Bond" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"><div class="stat-fill bond-fill" id="bond-bar"></div></div>
+            <span class="stat-value" id="bond-val">10</span>
+          </div>
+        </div>
+
+        <div id="achievements-panel" class="panel">
+          <h2>Trophies <span id="trophy-count">0/20</span></h2>
+          <div id="achievements-list"></div>
+        </div>
+      </div>
+
+      <!-- Center: Rock Stage -->
+      <div id="rock-stage">
+        <div id="env-layer"></div>
+        <div id="thought-bubble" class="hidden" aria-live="polite" role="status">
+          <span id="thought-text"></span>
+        </div>
+        <div id="rock-wrapper">
+          <div id="rock">
+            <div id="accessory-display" class="hidden"></div>
+            <div id="rock-body">
+              <div id="face">
+                <div id="face-accessory" class="hidden"></div>
+                <div class="eye left-eye"><div class="pupil"></div></div>
+                <div class="eye right-eye"><div class="pupil"></div></div>
+                <div id="mouth"></div>
+                <div id="blush-left" class="blush hidden"></div>
+                <div id="blush-right" class="blush hidden"></div>
+              </div>
+            </div>
+            <div id="rock-shadow"></div>
+          </div>
+          <div id="particles"></div>
+        </div>
+        <div id="mood-indicator"></div>
+      </div>
+
+      <!-- Right: Actions + Customize -->
+      <div id="right-panel">
+        <div id="action-panel" class="panel">
+          <h2>Actions</h2>
+          <div id="action-buttons">
+            <button class="action-btn" data-action="feed" title="Feed your rock">
+              <span class="btn-icon">🍪</span><span class="btn-label">Feed</span>
+            </button>
+            <button class="action-btn" data-action="play" title="Play a game">
+              <span class="btn-icon">🎾</span><span class="btn-label">Play</span>
+            </button>
+            <button class="action-btn" data-action="clean" title="Polish your rock">
+              <span class="btn-icon">🧽</span><span class="btn-label">Polish</span>
+            </button>
+            <button class="action-btn" data-action="sleep" title="Nap time">
+              <span class="btn-icon">😴</span><span class="btn-label">Sleep</span>
+            </button>
+            <button class="action-btn" data-action="talk" title="Have a chat">
+              <span class="btn-icon">💬</span><span class="btn-label">Talk</span>
+            </button>
+            <button class="action-btn" data-action="pet" title="Pet your rock">
+              <span class="btn-icon">🤚</span><span class="btn-label">Pet</span>
+            </button>
+            <button class="action-btn" data-action="exercise" title="Go for a walk">
+              <span class="btn-icon">🏃</span><span class="btn-label">Walk</span>
+            </button>
+            <button class="action-btn" data-action="music" title="Play tunes">
+              <span class="btn-icon">🎵</span><span class="btn-label">Music</span>
+            </button>
+          </div>
+          <div id="food-picker" class="sub-picker hidden">
+            <h3>Pick a Snack</h3>
+            <div id="food-options" class="picker-grid"></div>
+          </div>
+        </div>
+
+        <div id="customize-panel" class="panel">
+          <h2>Customize</h2>
+          <div class="tab-row" role="tablist">
+            <button class="tab-btn active" data-tab="tab-skin">Skin</button>
+            <button class="tab-btn" data-tab="tab-eyes">Eyes</button>
+            <button class="tab-btn" data-tab="tab-acc">Hats</button>
+            <button class="tab-btn" data-tab="tab-bg">Scene</button>
+          </div>
+          <div id="tab-skin" class="tab-content active">
+            <div id="skin-options" class="picker-grid"></div>
+          </div>
+          <div id="tab-eyes" class="tab-content">
+            <div id="eye-options" class="picker-grid"></div>
+          </div>
+          <div id="tab-acc" class="tab-content">
+            <div id="accessory-options" class="picker-grid"></div>
+          </div>
+          <div id="tab-bg" class="tab-content">
+            <div id="bg-options" class="picker-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message Log -->
+    <div id="message-log" aria-label="Game messages">
+      <div id="messages" role="log" aria-live="polite"></div>
+    </div>
+
+    <!-- Mini-Game Modal -->
+    <div id="minigame-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2 id="minigame-title">Rock, Paper, Scissors!</h2>
+        <p id="minigame-desc">Play against your pet rock!</p>
+        <div id="rps-game">
+          <div id="rps-choices">
+            <button class="rps-btn" data-choice="rock">🪨<br>Rock</button>
+            <button class="rps-btn" data-choice="paper">📄<br>Paper</button>
+            <button class="rps-btn" data-choice="scissors">✂️<br>Scissors</button>
+          </div>
+          <div id="rps-result" class="hidden">
+            <p id="rps-you">You chose: </p>
+            <p id="rps-rock">Rocky chose: </p>
+            <p id="rps-outcome"></p>
+            <button id="rps-again">Play Again</button>
+            <button id="rps-close">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievement Toast -->
+    <div id="achievement-toast" class="hidden" role="alert" aria-live="assertive">
+      <div id="toast-icon"></div>
+      <div id="toast-text">
+        <div id="toast-title">Achievement Unlocked!</div>
+        <div id="toast-desc"></div>
+      </div>
+    </div>
+
+    <!-- Level Up Overlay -->
+    <div id="levelup-overlay" class="hidden">
+      <div id="levelup-content">
+        <div id="levelup-text">LEVEL UP!</div>
+        <div id="levelup-number"></div>
+      </div>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

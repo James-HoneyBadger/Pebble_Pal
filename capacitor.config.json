@@ -1,0 +1,14 @@
+{
+  "appId": "com.petrock.app",
+  "appName": "Pet Rock",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "backgroundColor": "#1a1a2e",
+    "preferredContentMode": "mobile",
+    "scheme": "Pet Rock"
+  }
+}
