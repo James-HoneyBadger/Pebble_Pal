@@ -21,8 +21,8 @@
   "author": "James",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^25.1.8"
+    "electron": "^35.7.5",
+    "electron-builder": "^26.8.1"
   },
   "build": {
     "appId": "com.petrock.app",
