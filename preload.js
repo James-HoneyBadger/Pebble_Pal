@@ -7,9 +7,10 @@
 // This file exists as a placeholder for future features
 // (e.g. file-based saves, native notifications).
 
-const { contextBridge } = require("electron");
+const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("petRock", {
   platform: process.platform,
   version: "1.0.0",
+  onReset: (cb) => ipcRenderer.on("reset-game", cb),
 });

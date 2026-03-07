@@ -1,7 +1,7 @@
 // ============================================================
 //  🪨 Pet Rock — Electron Main Process
 // ============================================================
-const { app, BrowserWindow, Menu, shell, dialog } = require("electron");
+const { app, BrowserWindow, Menu, shell, dialog, ipcMain } = require("electron");
 const path = require("path");
 
 // Keep a global reference to avoid GC closing the window
@@ -75,9 +75,7 @@ function buildMenu() {
               })
               .then(({ response }) => {
                 if (response === 1) {
-                  mainWindow.webContents.executeJavaScript(
-                    "localStorage.clear(); location.reload();"
-                  );
+                  mainWindow.webContents.send("reset-game");
                 }
               });
           },
@@ -165,7 +163,9 @@ app.on("window-all-closed", () => {
 // Security: prevent new window creation from links
 app.on("web-contents-created", (event, contents) => {
   contents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    if (url.startsWith("https://") || url.startsWith("http://")) {
+      shell.openExternal(url);
+    }
     return { action: "deny" };
   });
 });

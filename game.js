@@ -236,6 +236,10 @@
       "Best friends forever — literally, I last forever.",
       "I'd move mountains for you! ...if I could move.",
     ],
+    gettingHungry: ["I could go for a snack...", "Getting a bit peckish over here..."],
+    gettingTired: ["Starting to feel a bit sleepy...", "Could use a little rest..."],
+    gettingDirty: ["Getting a tiny bit dusty...", "A quick polish would be nice..."],
+    gettingBored: ["Not much going on around here...", "A little activity would be nice..."],
   };
 
   const moodEmojis = {
@@ -511,7 +515,12 @@
       const unlocked = state.skinsUnlocked.includes(id);
       const btn = document.createElement("button");
       btn.className = `picker-btn${state.skin === id ? " active" : ""}${!unlocked ? " locked" : ""}`;
-      btn.innerHTML = `<span class="swatch" style="background:${skin.color}"></span>${skin.label}${!unlocked ? ` <span class="lock-icon">🔒 Lv${skin.unlock?.level || "?"}</span>` : ""}`;
+      const swatch = document.createElement("span");
+      swatch.className = "swatch";
+      swatch.style.background = skin.color;
+      btn.appendChild(swatch);
+      btn.appendChild(document.createTextNode(skin.label));
+      if (!unlocked) { const lock = document.createElement("span"); lock.className = "lock-icon"; lock.textContent = `🔒 Lv${skin.unlock?.level || "?"}`; btn.appendChild(lock); }
       btn.onclick = () => {
         if (!unlocked) { showThought(`Unlock at level ${skin.unlock?.level}!`); return; }
         state.skin = id; updateSkin(); renderSkinPicker();
@@ -692,6 +701,29 @@
     setTimeout(() => { state.actionCooldown = false; $$(".action-btn").forEach(b => b.disabled = false); }, ms);
   }
 
+  // ── Modal Helpers ──────────────────────────────────────────
+  function trapFocus(e, container) {
+    const focusable = [...container.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')].filter(el => !el.closest('.hidden') && el.offsetParent !== null);
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  function focusFirstInModal(modal) {
+    requestAnimationFrame(() => {
+      const el = modal.querySelector('button:not([disabled]):not(.hidden), input:not([disabled])');
+      if (el) el.focus();
+    });
+  }
+
+  function closeRPSModal() {
+    dom.minigameModal.classList.add("hidden");
+    const msg = pick(dialogue.play); showThought(msg); log(`${state.name}: "${msg}"`, "rock-msg");
+    const playBtn = $('[data-action="play"]');
+    if (playBtn) playBtn.focus();
+  }
+
   // ── Actions ────────────────────────────────────────────────
   function feedRock(foodId) {
     const food = FOODS[foodId];
@@ -723,11 +755,11 @@
     play() {
       if (state.isSleeping) { showThought("Zzz... too sleepy..."); return; }
       if (state.stats.energy < 10) { showThought("Too tired to play..."); log(`${state.name} is too tired!`, "warning-msg"); return; }
-      state.totalPlays++;
       dom.minigameModal.classList.remove("hidden");
       dom.rpsChoices.classList.remove("hidden");
       dom.rpsResult.classList.add("hidden");
       $("#minigame-title").textContent = `Rock Paper Scissors with ${state.name}!`;
+      focusFirstInModal(dom.minigameModal);
     },
     clean() {
       if (state.isSleeping) { showThought("Zzz... polish me later..."); return; }
@@ -742,6 +774,7 @@
       addXP(4); startCooldown(2000); checkAchievements();
     },
     sleep() {
+      if (state.actionCooldown) return;
       if (state.isSleeping) {
         state.isSleeping = false; stopSleepZzz();
         dom.rock.classList.remove("anim-sleep"); dom.gameContainer.classList.remove("night-mode");
@@ -754,6 +787,7 @@
         log(`${state.name} is napping.`, "action-msg"); log(`${state.name}: "${msg}"`, "rock-msg");
         addXP(3);
       }
+      startCooldown(1000);
       updateFace();
     },
     talk() {
@@ -808,6 +842,7 @@
       setTimeout(() => dom.rock.classList.remove("anim-dance"), 2400);
       spawnMusicNotes();
       showStatFloater("+12 😊", "#ffd93d");
+      showStatFloater("-5 ⚡", "#4d96ff");
       const msg = pick(dialogue.music); showThought(msg);
       log(`You played tunes for ${state.name}!`, "action-msg"); log(`${state.name}: "${msg}"`, "rock-msg");
       addXP(4); startCooldown(2500); checkAchievements();
@@ -817,12 +852,13 @@
   // ── RPS ────────────────────────────────────────────────────
   function playRPS(playerChoice) {
     const choices = ["rock", "paper", "scissors"];
-    const r = Math.random(); const rockChoice = r < 0.4 ? "rock" : r < 0.7 ? "scissors" : "paper";
+    const rockChoice = choices[Math.floor(Math.random() * 3)];
     const emojis = { rock: "🪨", paper: "📄", scissors: "✂️" };
     dom.rpsChoices.classList.add("hidden"); dom.rpsResult.classList.remove("hidden");
     dom.rpsYou.textContent = `You chose: ${emojis[playerChoice]} ${playerChoice}`;
     dom.rpsRock.textContent = `${state.name} chose: ${emojis[rockChoice]} ${rockChoice}`;
     let outcome;
+    state.totalPlays++;
     state.rpsPlayed++;
     if (playerChoice === rockChoice) {
       outcome = "It's a tie! 🤝"; state.stats.happiness = clamp(state.stats.happiness + 5);
@@ -831,9 +867,9 @@
       (playerChoice === "paper" && rockChoice === "rock") ||
       (playerChoice === "scissors" && rockChoice === "paper")
     ) {
-      outcome = "You win! 🎉"; state.stats.happiness = clamp(state.stats.happiness + 3); state.rpsWins++;
+      outcome = "You win! 🎉"; state.stats.happiness = clamp(state.stats.happiness + 10); state.rpsWins++;
     } else {
-      outcome = `${state.name} wins! 🪨💪`; state.stats.happiness = clamp(state.stats.happiness + 10);
+      outcome = `${state.name} wins! 🪨💪`; state.stats.happiness = clamp(state.stats.happiness + 3);
     }
     state.stats.energy = clamp(state.stats.energy - 8);
     state.stats.bond = clamp(state.stats.bond + 5);
@@ -853,6 +889,7 @@
       state.stats.fullness = clamp(state.stats.fullness - 0.5);
       state.stats.energy = clamp(state.stats.energy - 0.4);
       state.stats.cleanliness = clamp(state.stats.cleanliness - 0.3);
+      state.stats.bond = clamp(state.stats.bond - 0.1);
     }
     updateStats(); updateFace();
   }
@@ -864,23 +901,28 @@
     const { happiness: h, fullness: f, energy: e, cleanliness: c, bond: b } = state.stats;
     let pool = [];
     if (h < 30) pool.push(...dialogue.sad);
+    else if (h < 50) pool.push(...dialogue.gettingBored);
     if (f < 25) pool.push(...dialogue.hungry);
+    else if (f < 45) pool.push(...dialogue.gettingHungry);
     if (e < 25) pool.push(...dialogue.tired);
+    else if (e < 45) pool.push(...dialogue.gettingTired);
     if (c < 25) pool.push(...dialogue.dirty);
+    else if (c < 45) pool.push(...dialogue.gettingDirty);
     if (h < 40 && f > 30 && e > 30) pool.push(...dialogue.bored);
     if (b > 70 && Math.random() > 0.5) pool.push(...dialogue.highBond);
     if (pool.length > 0) showThought(pick(pool), 4000);
   }
 
   // ── Age ────────────────────────────────────────────────────
-  let ageTicks = 0;
+  let _lastAgeXP = 0;
   function ageUp() {
-    ageTicks++;
-    if (ageTicks % 12 === 0) {
-      state.age++; dom.ageDisplay.textContent = state.age;
-      addXP(2);
-      checkAchievements();
+    if (state.createdAt) {
+      state.age = Math.floor((Date.now() - state.createdAt) / 86400000);
     }
+    dom.ageDisplay.textContent = state.age;
+    const now = Date.now();
+    if (now - _lastAgeXP >= 60000) { _lastAgeXP = now; addXP(2); }
+    checkAchievements();
   }
 
   function checkCriticalStats() {
@@ -892,7 +934,11 @@
   }
 
   // ── Rock Click ─────────────────────────────────────────────
+  let _lastRockClick = 0;
   function onRockClick() {
+    const now = Date.now();
+    if (now - _lastRockClick < 500) return;
+    _lastRockClick = now;
     if (state.isSleeping) { showThought("*snore* ...don't wake me..."); return; }
     state.totalInteractions++;
     const reactions = [
@@ -916,29 +962,45 @@
       });
     });
     dom.rock.addEventListener("click", onRockClick);
-    // Also respond to touch for better iOS feel
     dom.rock.addEventListener("touchstart", (e) => { e.preventDefault(); onRockClick(); }, { passive: false });
+    dom.rock.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRockClick(); } });
 
-    dom.renameBtn.addEventListener("click", () => {
-      showRenameDialog();
-    });
+    dom.renameBtn.addEventListener("click", showRenameDialog);
 
-    // Tabs
-    $$(".tab-btn").forEach(btn => {
+    // Tabs — ARIA & keyboard navigation
+    const tabBtns = [...$$(".tab-btn")];
+    tabBtns.forEach((btn, i) => {
+      btn.id = btn.id || btn.dataset.tab + "-tab";
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-selected", btn.classList.contains("active") ? "true" : "false");
+      btn.setAttribute("aria-controls", btn.dataset.tab);
+      btn.setAttribute("tabindex", btn.classList.contains("active") ? "0" : "-1");
+      const panel = $(`#${btn.dataset.tab}`);
+      if (panel) { panel.setAttribute("role", "tabpanel"); panel.setAttribute("aria-labelledby", btn.id); }
       btn.addEventListener("click", () => {
-        $$(".tab-btn").forEach(b => b.classList.remove("active"));
+        tabBtns.forEach(b => { b.classList.remove("active"); b.setAttribute("aria-selected", "false"); b.setAttribute("tabindex", "-1"); });
         $$(".tab-content").forEach(t => t.classList.remove("active"));
         btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
+        btn.setAttribute("tabindex", "0");
         $(`#${btn.dataset.tab}`).classList.add("active");
+      });
+      btn.addEventListener("keydown", (e) => {
+        let next = -1;
+        if (e.key === "ArrowRight") next = (i + 1) % tabBtns.length;
+        else if (e.key === "ArrowLeft") next = (i - 1 + tabBtns.length) % tabBtns.length;
+        if (next >= 0) { e.preventDefault(); tabBtns[next].click(); tabBtns[next].focus(); }
       });
     });
 
-    // RPS
+    // RPS — with focus trap & Escape
     $$(".rps-btn").forEach(btn => btn.addEventListener("click", () => playRPS(btn.dataset.choice)));
-    dom.rpsAgain.addEventListener("click", () => { dom.rpsChoices.classList.remove("hidden"); dom.rpsResult.classList.add("hidden"); });
-    dom.rpsClose.addEventListener("click", () => {
-      dom.minigameModal.classList.add("hidden");
-      const msg = pick(dialogue.play); showThought(msg); log(`${state.name}: "${msg}"`, "rock-msg");
+    dom.rpsAgain.addEventListener("click", () => { dom.rpsChoices.classList.remove("hidden"); dom.rpsResult.classList.add("hidden"); focusFirstInModal(dom.minigameModal); });
+    dom.rpsClose.addEventListener("click", closeRPSModal);
+    dom.minigameModal.addEventListener("click", (e) => { if (e.target === dom.minigameModal) closeRPSModal(); });
+    dom.minigameModal.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { closeRPSModal(); return; }
+      if (e.key === "Tab") trapFocus(e, dom.minigameModal);
     });
   }
 
@@ -956,6 +1018,10 @@
         }
         // Reset runtime-only flags
         state.actionCooldown = false;
+        // Compute real age from creation date
+        if (state.createdAt) {
+          state.age = Math.floor((Date.now() - state.createdAt) / 86400000);
+        }
         // Time-away stat decay
         if (state.lastSaved) {
           const elapsed = (Date.now() - state.lastSaved) / 1000;
@@ -986,24 +1052,29 @@
 
   // ── Custom Rename Dialog (works on iOS/Capacitor) ──────────
   function showRenameDialog() {
-    // Create modal overlay
     const overlay = document.createElement("div");
     overlay.className = "modal";
-    overlay.innerHTML = `<div class="modal-content" style="max-width:320px">
-      <h2>Rename Your Rock</h2>
-      <input id="rename-input" type="text" value="${esc(state.name)}" maxlength="20"
-        style="width:100%;padding:10px;margin:12px 0;border-radius:10px;border:1px solid rgba(255,255,255,.15);
-        background:var(--bg-card);color:var(--text);font-size:1rem;text-align:center;outline:none" />
-      <div style="display:flex;gap:8px;justify-content:center">
-        <button id="rename-ok" style="background:var(--accent);border:none;border-radius:10px;padding:8px 24px;
-          color:white;font-size:.9rem;cursor:pointer">Rename</button>
-        <button id="rename-cancel" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.15);
-          border-radius:10px;padding:8px 24px;color:var(--text);font-size:.9rem;cursor:pointer">Cancel</button>
-      </div>
-    </div>`;
+    const content = document.createElement("div");
+    content.className = "modal-content rename-modal";
+    const heading = document.createElement("h2");
+    heading.textContent = "Rename Your Rock";
+    content.appendChild(heading);
+    const input = document.createElement("input");
+    input.type = "text"; input.value = state.name; input.maxLength = 20;
+    input.className = "rename-input";
+    content.appendChild(input);
+    const btnRow = document.createElement("div");
+    btnRow.className = "rename-btn-row";
+    const okBtn = document.createElement("button");
+    okBtn.textContent = "Rename"; okBtn.className = "rename-ok-btn";
+    const cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "Cancel"; cancelBtn.className = "rename-cancel-btn";
+    btnRow.appendChild(okBtn); btnRow.appendChild(cancelBtn);
+    content.appendChild(btnRow);
+    overlay.appendChild(content);
     document.body.appendChild(overlay);
-    const input = overlay.querySelector("#rename-input");
     input.focus(); input.select();
+    const close = () => { overlay.remove(); dom.renameBtn.focus(); };
     const doRename = () => {
       const n = input.value.trim();
       if (n && n !== state.name) {
@@ -1015,15 +1086,24 @@
         state.stats.bond = clamp(state.stats.bond + 2);
         addXP(3); updateStats(); updateFace();
       }
-      overlay.remove();
+      close();
     };
-    overlay.querySelector("#rename-ok").addEventListener("click", doRename);
-    overlay.querySelector("#rename-cancel").addEventListener("click", () => overlay.remove());
+    okBtn.addEventListener("click", doRename);
+    cancelBtn.addEventListener("click", close);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    overlay.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") close();
+      if (e.key === "Tab") trapFocus(e, overlay);
+    });
     input.addEventListener("keydown", (e) => { if (e.key === "Enter") doRename(); });
   }
 
   // ── Capacitor Lifecycle ────────────────────────────────────
   function initCapacitorLifecycle() {
+    // Listen for Electron reset command via IPC
+    if (window.petRock && window.petRock.onReset) {
+      window.petRock.onReset(() => { localStorage.clear(); location.reload(); });
+    }
     // Save on app backgrounding (iOS)
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") save();

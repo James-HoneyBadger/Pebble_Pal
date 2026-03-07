@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:">
   <title>🪨 My Pet Rock</title>
   <link rel="stylesheet" href="style.css">
@@ -69,7 +72,7 @@
           <span id="thought-text"></span>
         </div>
         <div id="rock-wrapper">
-          <div id="rock">
+          <div id="rock" role="button" tabindex="0" aria-label="Click your pet rock">
             <div id="accessory-display" class="hidden"></div>
             <div id="rock-body">
               <div id="face">
@@ -185,7 +188,7 @@
     </div>
 
     <!-- Level Up Overlay -->
-    <div id="levelup-overlay" class="hidden">
+    <div id="levelup-overlay" class="hidden" role="alert" aria-live="assertive">
       <div id="levelup-content">
         <div id="levelup-text">LEVEL UP!</div>
         <div id="levelup-number"></div>
