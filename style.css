@@ -429,3 +429,129 @@ header h1{
   *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important}
   #rock:hover{transform:none}
 }
+
+/* ===== SETTINGS BUTTON ===== */
+#settings-btn{background:none;border:none;cursor:pointer;font-size:.85rem;opacity:.6;transition:opacity .2s}
+#settings-btn:hover{opacity:1}
+
+/* ===== STREAK DISPLAY ===== */
+#streak-display{font-size:.78rem;color:#ffd93d;cursor:default}
+
+/* ===== STICKERS PANEL ===== */
+#stickers-panel h2{display:flex;justify-content:space-between;align-items:center}
+#sticker-count{font-size:.7rem;opacity:.6;font-weight:normal}
+#stickers-list{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.sticker.unlocked{background:rgba(255,215,0,.1)!important;border-color:rgba(255,215,0,.25)!important}
+
+/* ===== STREAK TOAST ===== */
+#streak-toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:200;
+  display:flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,#1a1a2e,#0f3460);border:1px solid rgba(255,215,0,.4);
+  border-radius:14px;padding:10px 20px;
+  box-shadow:0 8px 30px rgba(0,0,0,.4),0 0 20px rgba(255,165,0,.15);
+  animation:toast-in .5s ease;font-size:.9rem;font-weight:600;color:#ffd93d;
+}
+#streak-toast.hidden{display:none!important}
+#streak-icon{font-size:1.4rem}
+
+/* ===== DAILY EVENT TOAST ===== */
+#event-toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:200;
+  display:flex;align-items:center;gap:12px;
+  background:linear-gradient(135deg,#0f3460,#1a1a2e);border:1px solid rgba(77,150,255,.35);
+  border-radius:14px;padding:12px 20px;min-width:280px;max-width:92vw;
+  box-shadow:0 8px 30px rgba(0,0,0,.4);animation:toast-in .5s ease;
+}
+#event-toast.hidden{display:none!important}
+#event-icon{font-size:1.8rem}
+#event-title{font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)}
+#event-desc{font-size:.88rem;color:#4d96ff;font-weight:600;margin-top:2px}
+
+/* ===== GAME PICKER ===== */
+#game-picker{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.game-pick-btn{
+  background:var(--bg-card);border:2px solid rgba(255,255,255,.1);border-radius:14px;
+  padding:16px 10px;cursor:pointer;color:var(--text);transition:all .2s;
+  font-size:1.8rem;display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.game-pick-btn span{font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+.game-pick-btn:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 14px rgba(233,69,96,.25)}
+
+/* ===== MINIGAME BUTTONS ===== */
+.minigame-btn{
+  background:var(--accent);border:none;border-radius:10px;padding:9px 22px;
+  color:white;font-size:.9rem;cursor:pointer;transition:opacity .2s;margin:5px 4px 0;
+}
+.minigame-btn:hover{opacity:.85}
+.minigame-btn.secondary{background:var(--bg-card);border:1px solid rgba(255,255,255,.15);color:var(--text)}
+.minigame-btn.danger{background:#7a1a1a;border:1px solid rgba(255,100,100,.3);color:#ff9999}
+.minigame-btn.danger:hover{background:#a02020}
+
+/* ===== STONE SKIP ===== */
+#stoneskip-lane{
+  position:relative;height:48px;background:rgba(77,150,255,.1);border-radius:10px;
+  margin:16px 0 8px;overflow:hidden;border:1px solid rgba(77,150,255,.2);
+}
+#stoneskip-target{
+  position:absolute;top:0;bottom:0;left:35%;width:30%;
+  background:rgba(107,203,119,.25);border-left:2px solid #6bcb77;border-right:2px solid #6bcb77;
+  transition:opacity .2s;
+}
+#stoneskip-cursor{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:18px;height:18px;border-radius:50%;background:#e94560;
+  box-shadow:0 0 8px rgba(233,69,96,.5);transition:background .15s;
+}
+#stoneskip-skips{font-size:.85rem;color:var(--text-muted);margin-bottom:6px}
+#stoneskip-status{font-size:.82rem;color:var(--text-muted);margin-bottom:4px;min-height:1.2em}
+
+/* ===== GEM MATCH ===== */
+#gemmatch-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  margin:14px 0 8px;max-width:280px;margin-left:auto;margin-right:auto;
+}
+.gem-card{
+  width:58px;height:58px;font-size:1.5rem;background:var(--bg-card);
+  border:2px solid rgba(255,255,255,.1);border-radius:10px;cursor:pointer;
+  transition:all .2s;color:var(--text);display:flex;align-items:center;justify-content:center;
+}
+.gem-card:hover:not(.matched){border-color:var(--accent);transform:scale(1.05)}
+.gem-card.flipped{background:rgba(77,150,255,.15);border-color:rgba(77,150,255,.5)}
+.gem-card.matched{background:rgba(107,203,119,.2);border-color:#6bcb77;cursor:default;opacity:.8}
+#gemmatch-status{font-size:.82rem;color:var(--text-muted);min-height:1.2em;margin-bottom:6px}
+
+/* ===== EARTHQUAKE ===== */
+#quake-zone{margin:16px 0 8px;text-align:center}
+#quake-rock-icon{font-size:3rem;margin-bottom:10px;display:inline-block}
+#quake-bar-wrap{height:12px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;max-width:260px;margin:0 auto}
+#quake-bar{height:100%;width:0%;background:linear-gradient(90deg,#e94560,#ffd93d);border-radius:6px;transition:width .1s linear}
+#quake-status{font-size:.82rem;color:var(--text-muted);margin-bottom:6px;min-height:1.2em}
+@keyframes quake-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px) rotate(-2deg)}75%{transform:translateX(3px) rotate(2deg)}}
+
+/* ===== JOURNAL ===== */
+.journal-content{max-width:500px;text-align:left}
+#journal-entries{max-height:340px;overflow-y:auto;margin:14px 0;display:flex;flex-direction:column;gap:8px}
+.journal-entry{background:var(--bg-card);border-radius:10px;padding:10px 14px;border:1px solid rgba(255,255,255,.06)}
+.journal-date{font-size:.7rem;color:var(--text-muted);display:block;margin-bottom:3px}
+.journal-text{font-size:.85rem;color:var(--text)}
+
+/* ===== SETTINGS ===== */
+.settings-content{max-width:360px;text-align:left}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.settings-row label{font-size:.88rem;color:var(--text)}
+.toggle-btn{
+  background:var(--bg-card);border:1px solid rgba(255,255,255,.15);border-radius:8px;
+  padding:5px 14px;color:var(--text-muted);cursor:pointer;font-size:.8rem;transition:all .2s;min-width:48px;text-align:center;
+}
+.toggle-btn[data-on="true"]{background:rgba(107,203,119,.2);border-color:#6bcb77;color:#6bcb77}
+.settings-hr{border:none;border-top:1px solid rgba(255,255,255,.07);margin:12px 0}
+.settings-close-btn{margin-top:8px}
+#export-canvas{display:none}
+
+/* ===== EVOLUTION STAGE INDICATOR ===== */
+#evolution-badge{
+  position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
+  font-size:.65rem;color:var(--text-muted);opacity:.7;white-space:nowrap;z-index:3;
+  background:rgba(0,0,0,.3);padding:2px 8px;border-radius:8px;
+}

@@ -32,9 +32,22 @@
     accessoriesUnlocked: ["none", "hat", "bow"],
     backgroundsUnlocked: ["default"],
     achievementsUnlocked: [],
+    stickersCollected: [],
+    journalEntries: [],
     lastSaved: Date.now(),
     lastCustomizeXP: 0,
     createdAt: Date.now(),
+    // Streak tracking
+    streak: 0,
+    lastVisitDay: null,
+    // Daily event tracking
+    lastEventDay: null,
+    // Settings
+    sfxOn: true,
+    ambientOn: false,
+    particlesOn: true,
+    // Evolution
+    evolutionStage: 0,
   };
 
   // ── DOM ────────────────────────────────────────────────────
@@ -42,8 +55,10 @@
   const $$ = (s) => document.querySelectorAll(s);
   const dom = {
     nameLabel: $("#name-label"), renameBtn: $("#rename-btn"),
+    settingsBtn: $("#settings-btn"),
     ageDisplay: $("#age"), levelDisplay: $("#level"),
     xpBar: $("#xp-bar"), xpText: $("#xp-text"),
+    streakDisplay: $("#streak-days"),
     rock: $("#rock"), rockBody: $("#rock-body"), face: $("#face"), mouth: $("#mouth"),
     accessoryDisplay: $("#accessory-display"), faceAccessory: $("#face-accessory"),
     leftEye: $(".left-eye"), rightEye: $(".right-eye"),
@@ -57,6 +72,7 @@
     skinOptions: $("#skin-options"), eyeOptions: $("#eye-options"),
     accOptions: $("#accessory-options"), bgOptions: $("#bg-options"),
     achievementsList: $("#achievements-list"), trophyCount: $("#trophy-count"),
+    stickersList: $("#stickers-list"), stickerCount: $("#sticker-count"),
     minigameModal: $("#minigame-modal"), rpsChoices: $("#rps-choices"),
     rpsResult: $("#rps-result"), rpsYou: $("#rps-you"), rpsRock: $("#rps-rock"),
     rpsOutcome: $("#rps-outcome"), rpsAgain: $("#rps-again"), rpsClose: $("#rps-close"),
@@ -64,6 +80,37 @@
     achievementToast: $("#achievement-toast"), toastIcon: $("#toast-icon"),
     toastDesc: $("#toast-desc"),
     levelupOverlay: $("#levelup-overlay"), levelupNumber: $("#levelup-number"),
+    eventToast: $("#event-toast"), eventIcon: $("#event-icon"), eventDesc: $("#event-desc"),
+    // Stone skip
+    stoneskipModal: $("#stoneskip-modal"), stoneskipTap: $("#stoneskip-tap"),
+    stoneskipStatus: $("#stoneskip-status"), stoneskipCount: $("#skip-count"),
+    stoneskipResult: $("#stoneskip-result"), stoneskipOutcome: $("#stoneskip-outcome"),
+    stoneskipAgain: $("#stoneskip-again"), stoneskipClose: $("#stoneskip-close"),
+    stoneskipCursor: $("#stoneskip-cursor"), stoneskipTarget: $("#stoneskip-target"),
+    // Gem match
+    gemmatchModal: $("#gemmatch-modal"), gemmatchGrid: $("#gemmatch-grid"),
+    gemmatchStatus: $("#gemmatch-status"), gemmatchClose: $("#gemmatch-close"),
+    // Quake
+    quakeModal: $("#quake-modal"), quakeStart: $("#quake-start"),
+    quakeStatus: $("#quake-status"), quakeBar: $("#quake-bar"),
+    quakeResult: $("#quake-result"), quakeOutcome: $("#quake-outcome"),
+    quakeAgain: $("#quake-again"), quakeClose: $("#quake-close"),
+    quakeRockIcon: $("#quake-rock-icon"),
+    // Journal
+    journalModal: $("#journal-modal"), journalEntries: $("#journal-entries"),
+    journalClose: $("#journal-close"),
+    // Settings
+    settingsModal: $("#settings-modal"), settingsClose: $("#settings-close"),
+    toggleSfx: $("#toggle-sfx"), toggleAmbient: $("#toggle-ambient"),
+    toggleParticles: $("#toggle-particles"),
+    exportCardBtn: $("#export-card-btn"), openJournalBtn: $("#open-journal-btn"),
+    resetSaveBtn: $("#reset-save-btn"),
+    exportCanvas: $("#export-canvas"),
+    streakToast: $("#streak-toast"), streakText: $("#streak-text"),
+    // Game picker
+    gamePicker: $("#game-picker"), rpsGame: $("#rps-game"),
+    minigameBack: $("#minigame-back"), minigameRockName: $("#minigame-rock-name"),
+    evolutionBadge: $("#evolution-badge"),
   };
 
   const statBars = {}, statVals = {};
@@ -150,8 +197,48 @@
     stardust:   { label: "⭐ Stardust",       fullness: 15, happiness: 30, energy: 20, msg: "Stardust... I can taste the cosmos!", unlock: { level: 18 } },
   };
 
-  // ── Data: Achievements ─────────────────────────────────────
-  const ACHIEVEMENTS = [
+  // ── Data: Stickers ─────────────────────────────────────────
+  const STICKERS = [
+    { id: "s_rps_win",    icon: "✌️",  name: "Champ",        desc: "Win at RPS",              how: "Win RPS" },
+    { id: "s_skip_5",     icon: "🌊",  name: "Skipper",      desc: "Skip 5+ times",           how: "Stone Skip 5+" },
+    { id: "s_skip_10",    icon: "🏄",  name: "Pro Skipper",  desc: "Skip 10+ times",          how: "Stone Skip 10+" },
+    { id: "s_gems",       icon: "💎",  name: "Gem Collector",desc: "Win Gem Match",           how: "Win Gem Match" },
+    { id: "s_gems_fast",  icon: "⚡",  name: "Speed Matcher",desc: "Win Gem Match quickly",   how: "Gem Match <30s" },
+    { id: "s_quake",      icon: "🌋",  name: "Survivor",     desc: "Survive the earthquake",  how: "Win Earthquake" },
+    { id: "s_event_rain", icon: "🌧️",  name: "Rainy Day",    desc: "Experienced a rain event",how: "Daily event" },
+    { id: "s_event_sun",  icon: "☀️",  name: "Sunny Day",    desc: "Had a sunny day event",   how: "Daily event" },
+    { id: "s_streak3",    icon: "🔥",  name: "On Fire",      desc: "3-day visit streak",      how: "3-day streak" },
+    { id: "s_streak7",    icon: "🏆",  name: "Dedicated",    desc: "7-day visit streak",      how: "7-day streak" },
+    { id: "s_evolution1", icon: "🪨",  name: "Growing Up",   desc: "Rock evolved once",       how: "Reach level 10" },
+    { id: "s_evolution2", icon: "⛰️",  name: "Boulder",      desc: "Rock evolved to boulder", how: "Reach level 20" },
+    { id: "s_evolution3", icon: "💎",  name: "Crystal Form", desc: "Rock reached crystal form",how: "Reach level 30" },
+    { id: "s_journal5",   icon: "📖",  name: "Storyteller",  desc: "Rock has 5 journal entries",how: "5 journal entries" },
+    { id: "s_card",       icon: "📸",  name: "Famous Rock",  desc: "Exported a rock card",    how: "Export Card" },
+  ];
+
+  // ── Data: Daily Events ─────────────────────────────────────
+  const DAILY_EVENTS = [
+    { id: "rain",      icon: "🌧️", name: "Rainy Day",        desc: "Everything is washed clean!",      effects: { cleanliness: 20, happiness: -5 },  sticker: "s_event_rain" },
+    { id: "sunny",     icon: "☀️", name: "Sunny Day",         desc: "The warmth makes Rocky feel great!", effects: { happiness: 15, energy: 10 },       sticker: "s_event_sun" },
+    { id: "wind",      icon: "💨", name: "Windy Gust",        desc: "Rocky got a bit dusty...",          effects: { cleanliness: -15, happiness: 5 },   sticker: null },
+    { id: "meteor",    icon: "☄️", name: "Meteor Shower!",    desc: "Rocky spotted a meteor! +XP!",      effects: { happiness: 20 }, xp: 20,            sticker: null },
+    { id: "geologist", icon: "🧑‍🔬","name": "Geologist Visit", desc: "A scientist admired Rocky! +bond",  effects: { bond: 10, happiness: 10 },         sticker: null },
+    { id: "earthday",  icon: "🌍", name: "Earth Day!",        desc: "Rocky feels one with the earth!",   effects: { happiness: 25, bond: 5 }, xp: 10,   sticker: null },
+    { id: "cave",      icon: "🦇", name: "Cave Discovery",    desc: "Found a cool cave nearby!",         effects: { happiness: 10, energy: 15 },        sticker: null },
+    { id: "earthquake_minor", icon: "📳", name: "Tiny Tremor", desc: "Just a little shake! -energy",    effects: { energy: -10, happiness: -5 },       sticker: null },
+    { id: "gem_found", icon: "💎", name: "Found a Gem!",      desc: "A shiny gem was nearby!",           effects: { happiness: 20, fullness: 5 }, xp: 15, sticker: null },
+    { id: "friend",    icon: "🪨", name: "Rocky's Friend",    desc: "Another rock visited!",             effects: { happiness: 15, bond: 8 },           sticker: null },
+  ];
+
+  // ── Data: Evolution Stages ─────────────────────────────────
+  const EVOLUTION_STAGES = [
+    { level: 0,  name: "Pebble",         size: [140, 120], radius: "50% 50% 55% 45%/60% 55% 45% 40%" },
+    { level: 10, name: "Rock",           size: [155, 132], radius: "48% 52% 50% 50%/55% 50% 50% 45%" },
+    { level: 20, name: "Boulder",        size: [170, 148], radius: "45% 55% 52% 48%/50% 52% 48% 50%" },
+    { level: 30, name: "Crystal Formation", size: [160, 155], radius: "38% 62% 45% 55%/42% 55% 45% 58%" },
+  ];
+
+  // ── Data: Achievements ─────────────────────────────────────  const ACHIEVEMENTS = [
     { id: "first_feed",    icon: "🍪", name: "First Bite",        desc: "Feed for the first time",        check: () => state.totalFeeds >= 1 },
     { id: "feed_10",       icon: "🪨", name: "Mineral Lover",     desc: "Feed 10 times",                  check: () => state.totalFeeds >= 10 },
     { id: "feed_50",       icon: "⛏️", name: "Quarry Chef",       desc: "Feed 50 times",                  check: () => state.totalFeeds >= 50 },
@@ -172,6 +259,11 @@
     { id: "interactions_100", icon: "💯", name: "Centurion",      desc: "100 total interactions",         check: () => state.totalInteractions >= 100 },
     { id: "age_7",         icon: "🎂", name: "One Week",          desc: "Rock is 7 days old",             check: () => state.age >= 7 },
     { id: "age_30",        icon: "🏆", name: "One Month",         desc: "Rock is 30 days old",            check: () => state.age >= 30 },
+    { id: "streak_3",      icon: "🔥", name: "On a Roll",         desc: "3-day visit streak",             check: () => state.streak >= 3 },
+    { id: "streak_7",      icon: "🌈", name: "Week Streak",       desc: "7-day visit streak",             check: () => state.streak >= 7 },
+    { id: "evolution_1",   icon: "⬆️", name: "Growing Up",        desc: "Rock evolved for the first time",check: () => state.evolutionStage >= 1 },
+    { id: "stickers_5",    icon: "🌟", name: "Collector",         desc: "Collect 5 stickers",             check: () => state.stickersCollected.length >= 5 },
+    { id: "journal_5",     icon: "📖", name: "Memoirs",           desc: "Rock has 5 journal entries",     check: () => state.journalEntries.length >= 5 },
   ];
 
   // ── Data: Dialogue ─────────────────────────────────────────
@@ -279,7 +371,10 @@
       log(`🎉 LEVEL UP! You are now level ${state.level}!`, "xp-msg");
       showThought(`Level ${state.level}! I'm evolving! ...sort of!`, 4000);
       showLevelUp();
+      SFX.levelup();
       checkUnlocks();
+      checkEvolution();
+      addJournalEntry(`Reached level ${state.level}!`);
     }
     updateXPBar();
   }
@@ -342,6 +437,7 @@
         state.achievementsUnlocked.push(ach.id);
         log(`🏆 Achievement: ${ach.name} — ${ach.desc}`, "achieve-msg");
         showAchievementToast(ach);
+        SFX.achieve();
         addXP(15);
       }
     }
@@ -622,6 +718,7 @@
 
   // ── Particles ──────────────────────────────────────────────
   function spawnParticle(emoji, x, y) {
+    if (!state.particlesOn) return;
     const el = document.createElement("div");
     el.className = "particle"; el.textContent = emoji;
     el.style.left = (x || 80 + Math.random() * 40) + "px";
@@ -673,8 +770,432 @@
     }, i * 200);
   }
 
-  // ── Eye Tracking ───────────────────────────────────────────
-  function initEyeTracking() {
+  // ── Sound Effects ──────────────────────────────────────────
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  let audioCtx = null;
+  function getAudioCtx() {
+    if (!audioCtx) { try { audioCtx = new AudioCtx(); } catch(e) {} }
+    return audioCtx;
+  }
+
+  function playTone(freq, type = "sine", duration = 0.15, gain = 0.2) {
+    if (!state.sfxOn) return;
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      g.gain.setValueAtTime(gain, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.start(); osc.stop(ctx.currentTime + duration);
+    } catch(e) {}
+  }
+
+  const SFX = {
+    feed:    () => { playTone(440, "sine", 0.1); setTimeout(() => playTone(550, "sine", 0.1), 80); },
+    pet:     () => { playTone(660, "sine", 0.15); setTimeout(() => playTone(880, "sine", 0.1), 100); },
+    clean:   () => { [400,500,600,700].forEach((f,i) => setTimeout(() => playTone(f,"triangle",0.08), i*60)); },
+    levelup: () => { [523,659,784,1047].forEach((f,i) => setTimeout(() => playTone(f,"square",0.12,0.15), i*100)); },
+    achieve: () => { [784,1047].forEach((f,i) => setTimeout(() => playTone(f,"sine",0.15), i*120)); },
+    click:   () => playTone(300, "sine", 0.05, 0.1),
+    win:     () => { [523,659,784,1047,1319].forEach((f,i) => setTimeout(() => playTone(f,"sine",0.12), i*80)); },
+    lose:    () => { [400,350,300].forEach((f,i) => setTimeout(() => playTone(f,"sawtooth",0.1), i*100)); },
+    tap:     () => playTone(800, "square", 0.04, 0.15),
+    event:   () => { playTone(550, "sine", 0.1); setTimeout(() => playTone(700, "sine", 0.1), 100); },
+  };
+
+  let ambientNode = null, ambientGain = null;
+  function startAmbient() {
+    if (!state.ambientOn) return;
+    const ctx = getAudioCtx(); if (!ctx) return;
+    try {
+      stopAmbient();
+      ambientGain = ctx.createGain(); ambientGain.gain.setValueAtTime(0.04, ctx.currentTime);
+      ambientNode = ctx.createOscillator();
+      ambientNode.type = "sine"; ambientNode.frequency.setValueAtTime(80, ctx.currentTime);
+      ambientNode.connect(ambientGain); ambientGain.connect(ctx.destination);
+      ambientNode.start();
+    } catch(e) {}
+  }
+  function stopAmbient() {
+    try { if (ambientNode) { ambientNode.stop(); ambientNode = null; } } catch(e) {}
+  }
+
+  // ── Evolution ──────────────────────────────────────────────
+  function checkEvolution() {
+    let stage = 0;
+    for (let i = EVOLUTION_STAGES.length - 1; i >= 0; i--) {
+      if (state.level >= EVOLUTION_STAGES[i].level) { stage = i; break; }
+    }
+    if (stage !== state.evolutionStage) {
+      const prev = state.evolutionStage;
+      state.evolutionStage = stage;
+      const evo = EVOLUTION_STAGES[stage];
+      applyEvolutionShape();
+      if (stage > prev) {
+        log(`✨ ${state.name} evolved into a ${evo.name}!`, "xp-msg");
+        showThought(`I'm a ${evo.name} now! I feel... rockier!`, 5000);
+        spawnMulti("⭐", 8);
+        SFX.levelup();
+        addJournalEntry(`Evolved into a ${evo.name}!`);
+        grantSticker(stage === 1 ? "s_evolution1" : stage === 2 ? "s_evolution2" : "s_evolution3");
+        checkAchievements();
+      }
+    }
+  }
+
+  function applyEvolutionShape() {
+    const evo = EVOLUTION_STAGES[state.evolutionStage];
+    dom.rockBody.style.width = evo.size[0] + "px";
+    dom.rockBody.style.height = evo.size[1] + "px";
+    dom.rockBody.style.borderRadius = evo.radius;
+    if (dom.evolutionBadge) dom.evolutionBadge.textContent = evo.name;
+  }
+
+  // ── Streak ─────────────────────────────────────────────────
+  function checkStreak() {
+    const today = new Date().toDateString();
+    if (state.lastVisitDay === today) return;
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (state.lastVisitDay === yesterday) {
+      state.streak++;
+    } else if (state.lastVisitDay !== null) {
+      state.streak = 1;
+    } else {
+      state.streak = 1;
+    }
+    state.lastVisitDay = today;
+    dom.streakDisplay.textContent = state.streak;
+    if (state.streak > 1) {
+      dom.streakText.textContent = `${state.streak}-day streak! 🔥`;
+      dom.streakToast.classList.remove("hidden");
+      setTimeout(() => dom.streakToast.classList.add("hidden"), 3500);
+      addXP(state.streak * 3);
+      addJournalEntry(`Visited ${state.streak} days in a row!`);
+      SFX.event();
+    }
+    if (state.streak >= 3) grantSticker("s_streak3");
+    if (state.streak >= 7) grantSticker("s_streak7");
+    checkAchievements();
+  }
+
+  // ── Daily Events ───────────────────────────────────────────
+  function checkDailyEvent() {
+    const today = new Date().toDateString();
+    if (state.lastEventDay === today) return;
+    state.lastEventDay = today;
+    if (Math.random() < 0.7) {
+      const ev = pick(DAILY_EVENTS);
+      for (const [stat, val] of Object.entries(ev.effects)) {
+        if (state.stats[stat] !== undefined) state.stats[stat] = clamp(state.stats[stat] + val);
+      }
+      if (ev.xp) addXP(ev.xp);
+      if (ev.sticker) grantSticker(ev.sticker);
+      dom.eventIcon.textContent = ev.icon;
+      dom.eventDesc.textContent = ev.desc;
+      dom.eventToast.classList.remove("hidden");
+      setTimeout(() => dom.eventToast.classList.add("hidden"), 4500);
+      log(`📅 Daily Event: ${ev.name} — ${ev.desc}`, "system-msg");
+      addJournalEntry(`${ev.icon} ${ev.name}: ${ev.desc}`);
+      SFX.event();
+      updateStats(); updateFace();
+    }
+  }
+
+  // ── Stickers ───────────────────────────────────────────────
+  function grantSticker(id) {
+    if (state.stickersCollected.includes(id)) return;
+    const sticker = STICKERS.find(s => s.id === id);
+    if (!sticker) return;
+    state.stickersCollected.push(id);
+    log(`🌟 New Sticker: ${sticker.icon} ${sticker.name} — ${sticker.desc}`, "achieve-msg");
+    renderStickers();
+    checkAchievements();
+  }
+
+  let _lastStickerCount = -1;
+  function renderStickers() {
+    if (state.stickersCollected.length === _lastStickerCount) return;
+    _lastStickerCount = state.stickersCollected.length;
+    dom.stickersList.innerHTML = "";
+    for (const sticker of STICKERS) {
+      const d = document.createElement("div");
+      const has = state.stickersCollected.includes(sticker.id);
+      d.className = `trophy sticker ${has ? "unlocked" : "locked"}`;
+      d.textContent = sticker.icon;
+      d.dataset.tip = has ? sticker.name : "???";
+      dom.stickersList.appendChild(d);
+    }
+    dom.stickerCount.textContent = `${state.stickersCollected.length}/${STICKERS.length}`;
+  }
+
+  // ── Journal ────────────────────────────────────────────────
+  function addJournalEntry(text) {
+    const d = new Date();
+    const dateStr = d.toLocaleDateString([], { month: "short", day: "numeric" });
+    const entry = { date: dateStr, text, day: state.age };
+    state.journalEntries.unshift(entry);
+    if (state.journalEntries.length > 50) state.journalEntries.pop();
+    if (state.journalEntries.length >= 5) grantSticker("s_journal5");
+    checkAchievements();
+  }
+
+  function openJournal() {
+    dom.journalEntries.innerHTML = "";
+    if (state.journalEntries.length === 0) {
+      dom.journalEntries.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">No entries yet. Keep playing!</p>';
+    } else {
+      for (const entry of state.journalEntries) {
+        const el = document.createElement("div");
+        el.className = "journal-entry";
+        el.innerHTML = `<span class="journal-date">Day ${entry.day} · ${entry.date}</span><span class="journal-text">${esc(entry.text)}</span>`;
+        dom.journalEntries.appendChild(el);
+      }
+    }
+    dom.journalModal.classList.remove("hidden");
+    focusFirstInModal(dom.journalModal);
+  }
+
+  // ── Export Card ────────────────────────────────────────────
+  function exportRockCard() {
+    const canvas = dom.exportCanvas;
+    canvas.width = 400; canvas.height = 220;
+    const ctx = canvas.getContext("2d");
+    // Background
+    const grad = ctx.createLinearGradient(0, 0, 400, 220);
+    grad.addColorStop(0, "#1a1a2e"); grad.addColorStop(1, "#0f3460");
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, 400, 220);
+    // Border
+    ctx.strokeStyle = "rgba(233,69,96,0.6)"; ctx.lineWidth = 2;
+    ctx.roundRect(4, 4, 392, 212, 16); ctx.stroke();
+    // Rock emoji (large)
+    ctx.font = "80px serif"; ctx.textAlign = "center";
+    ctx.fillText("🪨", 90, 135);
+    // Evolution stage indicator
+    const evo = EVOLUTION_STAGES[state.evolutionStage];
+    ctx.font = "bold 22px sans-serif"; ctx.fillStyle = "#ffd93d";
+    ctx.textAlign = "left"; ctx.fillText(state.name, 170, 55);
+    ctx.font = "13px sans-serif"; ctx.fillStyle = "#a0a0b0";
+    ctx.fillText(`${evo.name} · Lv. ${state.level}`, 170, 75);
+    ctx.fillText(`Age: ${state.age} days`, 170, 95);
+    ctx.fillText(`Bond: ${Math.round(state.stats.bond)}/100`, 170, 115);
+    ctx.fillText(`Streak: 🔥 ${state.streak} days`, 170, 135);
+    ctx.fillText(`Trophies: ${state.achievementsUnlocked.length}/${ACHIEVEMENTS.length}`, 170, 155);
+    ctx.fillText(`Stickers: ${state.stickersCollected.length}/${STICKERS.length}`, 170, 175);
+    // Footer
+    ctx.font = "11px sans-serif"; ctx.fillStyle = "rgba(160,160,176,0.5)";
+    ctx.textAlign = "center"; ctx.fillText("🪨 My Pet Rock", 200, 205);
+    // Download
+    const link = document.createElement("a");
+    link.download = `${state.name}_rock_card.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    grantSticker("s_card");
+    log("📸 Rock card exported!", "system-msg");
+  }
+
+  // ── Settings ───────────────────────────────────────────────
+  function openSettings() {
+    dom.toggleSfx.textContent = state.sfxOn ? "ON" : "OFF";
+    dom.toggleSfx.dataset.on = state.sfxOn ? "true" : "false";
+    dom.toggleAmbient.textContent = state.ambientOn ? "ON" : "OFF";
+    dom.toggleAmbient.dataset.on = state.ambientOn ? "true" : "false";
+    dom.toggleParticles.textContent = state.particlesOn ? "ON" : "OFF";
+    dom.toggleParticles.dataset.on = state.particlesOn ? "true" : "false";
+    dom.settingsModal.classList.remove("hidden");
+    focusFirstInModal(dom.settingsModal);
+  }
+
+  // ── Mini-game: Stone Skip ──────────────────────────────────
+  let skipActive = false, skipCount = 0, skipCursorAnim = null, skipTapWindow = false;
+  function openStoneSkip() {
+    skipActive = false; skipCount = 0;
+    dom.stoneskipCount.textContent = "0";
+    dom.stoneskipStatus.textContent = "Watch the cursor — tap when it's in the zone!";
+    dom.stoneskipResult.classList.add("hidden");
+    dom.stoneskipTap.classList.remove("hidden");
+    dom.stoneskipTap.disabled = false;
+    dom.stoneskipModal.classList.remove("hidden");
+    focusFirstInModal(dom.stoneskipModal);
+    startSkipCursor();
+  }
+
+  function startSkipCursor() {
+    if (skipCursorAnim) clearInterval(skipCursorAnim);
+    let pos = 0, dir = 1, speed = 3;
+    const laneWidth = dom.stoneskipModal.querySelector("#stoneskip-lane").offsetWidth || 280;
+    skipActive = true;
+    skipCursorAnim = setInterval(() => {
+      pos += dir * speed;
+      if (pos >= laneWidth - 20) { pos = laneWidth - 20; dir = -1; }
+      if (pos <= 0) { pos = 0; dir = 1; }
+      dom.stoneskipCursor.style.left = pos + "px";
+      // Target zone: middle 30%
+      const zoneStart = laneWidth * 0.35, zoneEnd = laneWidth * 0.65;
+      skipTapWindow = pos >= zoneStart && pos <= zoneEnd;
+      dom.stoneskipTarget.style.opacity = skipTapWindow ? "1" : "0.4";
+    }, 16);
+    // Auto-end after 8 seconds
+    setTimeout(() => endSkipGame(), 8000);
+  }
+
+  function endSkipGame() {
+    skipActive = false;
+    if (skipCursorAnim) { clearInterval(skipCursorAnim); skipCursorAnim = null; }
+    dom.stoneskipTap.disabled = true;
+    dom.stoneskipTap.classList.add("hidden");
+    dom.stoneskipResult.classList.remove("hidden");
+    state.totalPlays++;
+    const xpGain = skipCount * 4 + 5;
+    addXP(xpGain);
+    state.stats.happiness = clamp(state.stats.happiness + skipCount * 3);
+    state.stats.bond = clamp(state.stats.bond + skipCount);
+    dom.stoneskipOutcome.textContent = skipCount >= 10
+      ? `Amazing! ${skipCount} skips! ${state.name} is thrilled!`
+      : skipCount >= 5
+        ? `Nice! ${skipCount} skips! Well done!`
+        : `${skipCount} skips. Keep practicing!`;
+    dom.stoneskipStatus.textContent = "Done!";
+    if (skipCount >= 5) grantSticker("s_skip_5");
+    if (skipCount >= 10) grantSticker("s_skip_10");
+    log(`Stone Skip: ${skipCount} skips! +${xpGain} XP`, "action-msg");
+    addJournalEntry(`Played Stone Skip — ${skipCount} skips!`);
+    (skipCount >= 5 ? SFX.win : SFX.lose)();
+    updateStats(); updateFace(); checkAchievements();
+  }
+
+  // ── Mini-game: Gem Match ───────────────────────────────────
+  const GEM_ICONS = ["💎","🔮","💠","🔷","🟣","🟡","🟢","🔴"];
+  let gemCards = [], gemFlipped = [], gemMatched = [], gemLocked = false, gemStartTime = 0;
+
+  function openGemMatch() {
+    gemCards = []; gemFlipped = []; gemMatched = []; gemLocked = false;
+    dom.gemmatchStatus.textContent = "Tap cards to find pairs!";
+    dom.gemmatchGrid.innerHTML = "";
+    dom.gemmatchModal.classList.remove("hidden");
+    // Pick 4 pairs (8 cards)
+    const icons = GEM_ICONS.slice(0, 4);
+    const deck = [...icons, ...icons].sort(() => Math.random() - 0.5);
+    deck.forEach((icon, i) => {
+      const card = document.createElement("button");
+      card.className = "gem-card";
+      card.dataset.icon = icon; card.dataset.index = i;
+      card.textContent = "?";
+      card.setAttribute("aria-label", "Gem card");
+      card.addEventListener("click", () => onGemCardClick(card, i, icon));
+      dom.gemmatchGrid.appendChild(card);
+      gemCards.push(card);
+    });
+    gemStartTime = Date.now();
+    focusFirstInModal(dom.gemmatchModal);
+  }
+
+  function onGemCardClick(card, idx, icon) {
+    if (gemLocked || gemFlipped.includes(idx) || gemMatched.includes(idx)) return;
+    card.textContent = icon; card.classList.add("flipped");
+    gemFlipped.push(idx);
+    SFX.tap();
+    if (gemFlipped.length === 2) {
+      gemLocked = true;
+      const [a, b] = gemFlipped;
+      if (gemCards[a].dataset.icon === gemCards[b].dataset.icon) {
+        gemMatched.push(a, b);
+        gemCards[a].classList.add("matched"); gemCards[b].classList.add("matched");
+        gemFlipped = []; gemLocked = false;
+        dom.gemmatchStatus.textContent = `${gemMatched.length / 2} / 4 pairs matched!`;
+        if (gemMatched.length === 8) endGemMatch();
+      } else {
+        setTimeout(() => {
+          gemCards[a].textContent = "?"; gemCards[a].classList.remove("flipped");
+          gemCards[b].textContent = "?"; gemCards[b].classList.remove("flipped");
+          gemFlipped = []; gemLocked = false;
+        }, 800);
+      }
+    }
+  }
+
+  function endGemMatch() {
+    const elapsed = (Date.now() - gemStartTime) / 1000;
+    state.totalPlays++;
+    addXP(25);
+    state.stats.happiness = clamp(state.stats.happiness + 20);
+    state.stats.bond = clamp(state.stats.bond + 8);
+    dom.gemmatchStatus.textContent = `All matched in ${elapsed.toFixed(1)}s! +25 XP!`;
+    grantSticker("s_gems");
+    if (elapsed < 30) grantSticker("s_gems_fast");
+    log(`Gem Match: all matched in ${elapsed.toFixed(1)}s! +25 XP`, "action-msg");
+    addJournalEntry(`Won Gem Match in ${elapsed.toFixed(1)} seconds!`);
+    SFX.win();
+    updateStats(); updateFace(); checkAchievements();
+  }
+
+  // ── Mini-game: Earthquake Survival ────────────────────────
+  let quakeTimer = null, quakeStarted = false, quakeFailed = false, quakeProgress = 0;
+  let quakeMouseHandler = null, quakeTouchHandler = null;
+
+  function openQuake() {
+    quakeStarted = false; quakeFailed = false; quakeProgress = 0;
+    dom.quakeBar.style.width = "0%";
+    dom.quakeStatus.textContent = "Press Start then HOLD STILL!";
+    dom.quakeResult.classList.add("hidden");
+    dom.quakeStart.classList.remove("hidden");
+    dom.quakeRockIcon.style.animation = "";
+    dom.quakeModal.classList.remove("hidden");
+    focusFirstInModal(dom.quakeModal);
+  }
+
+  function startQuake() {
+    quakeStarted = true; quakeFailed = false; quakeProgress = 0;
+    dom.quakeStart.classList.add("hidden");
+    dom.quakeStatus.textContent = "Hold still... 🫨";
+    dom.quakeRockIcon.style.animation = "quake-shake 0.1s infinite";
+    quakeProgress = 0;
+    quakeTimer = setInterval(() => {
+      quakeProgress += 2;
+      dom.quakeBar.style.width = quakeProgress + "%";
+      if (quakeProgress >= 100) endQuake(true);
+    }, 100);
+    // Fail if user moves mouse/touches inside the modal
+    quakeMouseHandler = () => { if (quakeStarted && !quakeFailed) endQuake(false); };
+    quakeTouchHandler = () => { if (quakeStarted && !quakeFailed) endQuake(false); };
+    dom.quakeModal.addEventListener("mousemove", quakeMouseHandler);
+    dom.quakeModal.addEventListener("touchmove", quakeTouchHandler);
+  }
+
+  function endQuake(survived) {
+    quakeStarted = false;
+    clearInterval(quakeTimer);
+    dom.quakeModal.removeEventListener("mousemove", quakeMouseHandler);
+    dom.quakeModal.removeEventListener("touchmove", quakeTouchHandler);
+    dom.quakeRockIcon.style.animation = "";
+    dom.quakeResult.classList.remove("hidden");
+    dom.quakeStart.classList.add("hidden");
+    state.totalPlays++;
+    if (survived) {
+      dom.quakeOutcome.textContent = `${state.name} survived! Amazing stillness! +20 XP`;
+      dom.quakeStatus.textContent = "You did it!";
+      addXP(20);
+      state.stats.happiness = clamp(state.stats.happiness + 15);
+      state.stats.bond = clamp(state.stats.bond + 6);
+      grantSticker("s_quake");
+      log("Earthquake Survival: SURVIVED! +20 XP", "action-msg");
+      addJournalEntry("Survived the earthquake!");
+      SFX.win();
+    } else {
+      dom.quakeOutcome.textContent = `Oh no! ${state.name} got shaken up! +5 XP for trying`;
+      dom.quakeStatus.textContent = "You moved!";
+      dom.quakeBar.style.width = quakeProgress + "%";
+      addXP(5);
+      state.stats.happiness = clamp(state.stats.happiness - 5);
+      log("Earthquake Survival: Failed! Try again!", "warning-msg");
+      SFX.lose();
+    }
+    updateStats(); updateFace(); checkAchievements();
+  }
+
+  // ── Eye Tracking ───────────────────────────────────────────  function initEyeTracking() {
     function trackEyes(clientX, clientY) {
       if (state.isSleeping) return;
       const r = dom.rockBody.getBoundingClientRect();
@@ -719,9 +1240,20 @@
 
   function closeRPSModal() {
     dom.minigameModal.classList.add("hidden");
+    dom.gamePicker.classList.remove("hidden");
+    dom.rpsGame.classList.add("hidden");
+    dom.minigameBack.classList.add("hidden");
     const msg = pick(dialogue.play); showThought(msg); log(`${state.name}: "${msg}"`, "rock-msg");
     const playBtn = $('[data-action="play"]');
     if (playBtn) playBtn.focus();
+  }
+
+  function showGamePicker() {
+    dom.gamePicker.classList.remove("hidden");
+    dom.rpsGame.classList.add("hidden");
+    dom.minigameBack.classList.add("hidden");
+    $("#minigame-title").textContent = `Play with ${state.name}!`;
+    $("#minigame-desc").textContent = "Choose a game:";
   }
 
   // ── Actions ────────────────────────────────────────────────
@@ -742,6 +1274,7 @@
     dom.foodPicker.classList.add("hidden");
     showStatFloater(`+${food.fullness} 🍔`, "#6bcb77");
     if (food.happiness > 5) showStatFloater(`+${food.happiness} 😊`, "#ffd93d");
+    SFX.feed();
     addXP(5 + Math.floor(food.happiness / 5));
     startCooldown();
     updateStats(); updateFace(); checkAchievements();
@@ -755,10 +1288,14 @@
     play() {
       if (state.isSleeping) { showThought("Zzz... too sleepy..."); return; }
       if (state.stats.energy < 10) { showThought("Too tired to play..."); log(`${state.name} is too tired!`, "warning-msg"); return; }
+      // Show game picker
+      dom.minigameRockName.textContent = state.name;
+      dom.gamePicker.classList.remove("hidden");
+      dom.rpsGame.classList.add("hidden");
+      dom.minigameBack.classList.add("hidden");
+      $("#minigame-title").textContent = `Play with ${state.name}!`;
+      $("#minigame-desc").textContent = "Choose a game:";
       dom.minigameModal.classList.remove("hidden");
-      dom.rpsChoices.classList.remove("hidden");
-      dom.rpsResult.classList.add("hidden");
-      $("#minigame-title").textContent = `Rock Paper Scissors with ${state.name}!`;
       focusFirstInModal(dom.minigameModal);
     },
     clean() {
@@ -771,6 +1308,7 @@
       showStatFloater("+25 ✨", "#c4b5fd");
       const msg = pick(dialogue.clean); showThought(msg);
       log(`You polished ${state.name}!`, "action-msg"); log(`${state.name}: "${msg}"`, "rock-msg");
+      SFX.clean();
       addXP(4); startCooldown(2000); checkAchievements();
     },
     sleep() {
@@ -814,6 +1352,7 @@
       showStatFloater("+10 😊", "#ffd93d");
       const msg = pick(dialogue.pet); showThought(msg);
       log(`You petted ${state.name}!`, "action-msg"); log(`${state.name}: "${msg}"`, "rock-msg");
+      SFX.pet();
       addXP(4); startCooldown(800); checkAchievements();
     },
     exercise() {
@@ -966,6 +1505,7 @@
     dom.rock.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRockClick(); } });
 
     dom.renameBtn.addEventListener("click", showRenameDialog);
+    dom.settingsBtn.addEventListener("click", openSettings);
 
     // Tabs — ARIA & keyboard navigation
     const tabBtns = [...$$(".tab-btn")];
@@ -993,6 +1533,35 @@
       });
     });
 
+    // Game picker
+    $$(".game-pick-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const game = btn.dataset.game;
+        dom.minigameModal.classList.add("hidden");
+        if (game === "rps") {
+          dom.gamePicker.classList.add("hidden");
+          dom.rpsGame.classList.remove("hidden");
+          dom.minigameBack.classList.remove("hidden");
+          dom.rpsChoices.classList.remove("hidden");
+          dom.rpsResult.classList.add("hidden");
+          $("#minigame-title").textContent = `Rock Paper Scissors with ${state.name}!`;
+          $("#minigame-desc").textContent = "Choose your weapon:";
+          dom.minigameModal.classList.remove("hidden");
+          focusFirstInModal(dom.minigameModal);
+        } else if (game === "stoneskip") {
+          openStoneSkip();
+        } else if (game === "gemmatch") {
+          openGemMatch();
+        } else if (game === "quake") {
+          openQuake();
+        }
+      });
+    });
+
+    dom.minigameBack.addEventListener("click", () => {
+      showGamePicker();
+    });
+
     // RPS — with focus trap & Escape
     $$(".rps-btn").forEach(btn => btn.addEventListener("click", () => playRPS(btn.dataset.choice)));
     dom.rpsAgain.addEventListener("click", () => { dom.rpsChoices.classList.remove("hidden"); dom.rpsResult.classList.add("hidden"); focusFirstInModal(dom.minigameModal); });
@@ -1001,6 +1570,76 @@
     dom.minigameModal.addEventListener("keydown", (e) => {
       if (e.key === "Escape") { closeRPSModal(); return; }
       if (e.key === "Tab") trapFocus(e, dom.minigameModal);
+    });
+
+    // Stone Skip
+    dom.stoneskipTap.addEventListener("click", () => {
+      if (!skipActive) return;
+      SFX.tap();
+      if (skipTapWindow) {
+        skipCount++; dom.stoneskipCount.textContent = skipCount;
+        dom.stoneskipStatus.textContent = `Skip! (${skipCount})`;
+        dom.stoneskipCursor.style.background = "#6bcb77";
+        setTimeout(() => dom.stoneskipCursor.style.background = "", 200);
+      } else {
+        dom.stoneskipStatus.textContent = "Missed! Wait for the zone.";
+        dom.stoneskipCursor.style.background = "#e94560";
+        setTimeout(() => dom.stoneskipCursor.style.background = "", 200);
+      }
+    });
+    dom.stoneskipAgain.addEventListener("click", () => { dom.stoneskipResult.classList.add("hidden"); startSkipCursor(); dom.stoneskipTap.classList.remove("hidden"); dom.stoneskipTap.disabled = false; skipCount = 0; dom.stoneskipCount.textContent = "0"; });
+    dom.stoneskipClose.addEventListener("click", () => {
+      skipActive = false;
+      if (skipCursorAnim) { clearInterval(skipCursorAnim); skipCursorAnim = null; }
+      dom.stoneskipModal.classList.add("hidden");
+    });
+    dom.stoneskipModal.addEventListener("keydown", e => { if (e.key === "Escape") dom.stoneskipClose.click(); });
+
+    // Gem Match
+    dom.gemmatchClose.addEventListener("click", () => dom.gemmatchModal.classList.add("hidden"));
+    dom.gemmatchModal.addEventListener("keydown", e => { if (e.key === "Escape") dom.gemmatchModal.classList.add("hidden"); });
+    dom.gemmatchModal.addEventListener("click", e => { if (e.target === dom.gemmatchModal) dom.gemmatchModal.classList.add("hidden"); });
+
+    // Quake
+    dom.quakeStart.addEventListener("click", startQuake);
+    dom.quakeAgain.addEventListener("click", () => { dom.quakeResult.classList.add("hidden"); dom.quakeStart.classList.remove("hidden"); dom.quakeBar.style.width = "0%"; dom.quakeStatus.textContent = "Press Start then HOLD STILL!"; });
+    dom.quakeClose.addEventListener("click", () => { clearInterval(quakeTimer); dom.quakeModal.classList.add("hidden"); });
+    dom.quakeModal.addEventListener("keydown", e => { if (e.key === "Escape") dom.quakeClose.click(); });
+
+    // Journal
+    dom.journalClose.addEventListener("click", () => dom.journalModal.classList.add("hidden"));
+    dom.journalModal.addEventListener("click", e => { if (e.target === dom.journalModal) dom.journalModal.classList.add("hidden"); });
+    dom.journalModal.addEventListener("keydown", e => { if (e.key === "Escape") dom.journalModal.classList.add("hidden"); });
+
+    // Settings
+    dom.settingsClose.addEventListener("click", () => dom.settingsModal.classList.add("hidden"));
+    dom.settingsModal.addEventListener("click", e => { if (e.target === dom.settingsModal) dom.settingsModal.classList.add("hidden"); });
+    dom.settingsModal.addEventListener("keydown", e => { if (e.key === "Escape") dom.settingsModal.classList.add("hidden"); });
+
+    dom.toggleSfx.addEventListener("click", () => {
+      state.sfxOn = !state.sfxOn;
+      dom.toggleSfx.textContent = state.sfxOn ? "ON" : "OFF";
+      dom.toggleSfx.dataset.on = state.sfxOn ? "true" : "false";
+      if (state.sfxOn) SFX.click();
+    });
+    dom.toggleAmbient.addEventListener("click", () => {
+      state.ambientOn = !state.ambientOn;
+      dom.toggleAmbient.textContent = state.ambientOn ? "ON" : "OFF";
+      dom.toggleAmbient.dataset.on = state.ambientOn ? "true" : "false";
+      if (state.ambientOn) startAmbient(); else stopAmbient();
+    });
+    dom.toggleParticles.addEventListener("click", () => {
+      state.particlesOn = !state.particlesOn;
+      dom.toggleParticles.textContent = state.particlesOn ? "ON" : "OFF";
+      dom.toggleParticles.dataset.on = state.particlesOn ? "true" : "false";
+    });
+    dom.exportCardBtn.addEventListener("click", () => { exportRockCard(); });
+    dom.openJournalBtn.addEventListener("click", () => { dom.settingsModal.classList.add("hidden"); openJournal(); });
+    dom.resetSaveBtn.addEventListener("click", () => {
+      if (confirm("Really reset all save data? This cannot be undone!")) {
+        localStorage.removeItem("petRockState2");
+        location.reload();
+      }
     });
   }
 
@@ -1122,12 +1761,14 @@
     initEvents();
     renderPickers();
     renderAchievements();
+    renderStickers();
     updateStats();
     updateFace();
     updateSkin();
     updateAccessory();
     updateBackground();
     updateXPBar();
+    applyEvolutionShape();
     // If was sleeping
     if (state.isSleeping) {
       dom.rock.classList.add("anim-sleep");
@@ -1136,6 +1777,11 @@
     }
     checkUnlocks();
     initCapacitorLifecycle();
+    // New systems
+    checkStreak();
+    checkDailyEvent();
+    if (state.ambientOn) startAmbient();
+    dom.streakDisplay.textContent = state.streak;
 
     setInterval(statDecay, 5000);
     setInterval(idleThoughts, 15000);

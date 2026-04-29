@@ -17,6 +17,7 @@
       <div id="rock-name-display">
         <span id="name-label">Rocky</span>
         <button id="rename-btn" title="Rename" aria-label="Rename your rock">✏️</button>
+        <button id="settings-btn" title="Settings" aria-label="Open settings">⚙️</button>
       </div>
       <div id="header-meta">
         <span id="age-display">Age: <span id="age">0</span> days</span>
@@ -24,6 +25,8 @@
         <span id="level-display">Lv. <span id="level">1</span></span>
         <div id="xp-bar-wrap" title="Experience"><div id="xp-bar"></div></div>
         <span id="xp-text">0 / 50 XP</span>
+        <span class="meta-sep">·</span>
+        <span id="streak-display" title="Daily streak">🔥 <span id="streak-days">0</span>d</span>
       </div>
     </header>
 
@@ -63,6 +66,11 @@
           <h2>Trophies <span id="trophy-count">0/20</span></h2>
           <div id="achievements-list"></div>
         </div>
+
+        <div id="stickers-panel" class="panel">
+          <h2>Stickers <span id="sticker-count">0/0</span></h2>
+          <div id="stickers-list"></div>
+        </div>
       </div>
 
       <!-- Center: Rock Stage -->
@@ -86,6 +94,7 @@
             </div>
             <div id="rock-shadow"></div>
           </div>
+          <div id="evolution-badge">Pebble</div>
           <div id="particles"></div>
         </div>
         <div id="mood-indicator"></div>
@@ -159,9 +168,15 @@
     <!-- Mini-Game Modal -->
     <div id="minigame-modal" class="modal hidden">
       <div class="modal-content">
-        <h2 id="minigame-title">Rock, Paper, Scissors!</h2>
-        <p id="minigame-desc">Play against your pet rock!</p>
-        <div id="rps-game">
+        <h2 id="minigame-title">Pick a Game!</h2>
+        <p id="minigame-desc">Choose how to play with <span id="minigame-rock-name">Rocky</span>!</p>
+        <div id="game-picker">
+          <button class="game-pick-btn" data-game="rps">🪨📄✂️<br><span>Rock Paper Scissors</span></button>
+          <button class="game-pick-btn" data-game="stoneskip">🌊<br><span>Stone Skip</span></button>
+          <button class="game-pick-btn" data-game="gemmatch">💎<br><span>Gem Match</span></button>
+          <button class="game-pick-btn" data-game="quake">🌋<br><span>Earthquake!</span></button>
+        </div>
+        <div id="rps-game" class="hidden">
           <div id="rps-choices">
             <button class="rps-btn" data-choice="rock">🪨<br>Rock</button>
             <button class="rps-btn" data-choice="paper">📄<br>Paper</button>
@@ -175,6 +190,7 @@
             <button id="rps-close">Done</button>
           </div>
         </div>
+        <button id="minigame-back" class="minigame-btn secondary hidden">← Back</button>
       </div>
     </div>
 
@@ -194,7 +210,112 @@
         <div id="levelup-number"></div>
       </div>
     </div>
+
+    <!-- Daily Event Toast -->
+    <div id="event-toast" class="hidden" role="alert" aria-live="polite">
+      <div id="event-icon"></div>
+      <div id="event-text">
+        <div id="event-title">Daily Event!</div>
+        <div id="event-desc"></div>
+      </div>
+    </div>
+
+    <!-- Mini-game: Stone Skip -->
+    <div id="stoneskip-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>🌊 Stone Skip!</h2>
+        <p>Tap the button to the rhythm — each hit at the right time is a skip!</p>
+        <div id="stoneskip-lane">
+          <div id="stoneskip-target"></div>
+          <div id="stoneskip-cursor"></div>
+        </div>
+        <div id="stoneskip-status">Get ready…</div>
+        <div id="stoneskip-skips">Skips: <span id="skip-count">0</span></div>
+        <button id="stoneskip-tap" class="minigame-btn">TAP!</button>
+        <div id="stoneskip-result" class="hidden">
+          <p id="stoneskip-outcome"></p>
+          <button id="stoneskip-again" class="minigame-btn">Try Again</button>
+          <button id="stoneskip-close" class="minigame-btn secondary">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini-game: Gem Match -->
+    <div id="gemmatch-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>💎 Gem Match!</h2>
+        <p>Memorise and match the gem pairs!</p>
+        <div id="gemmatch-grid"></div>
+        <div id="gemmatch-status">Tap a card to start!</div>
+        <button id="gemmatch-close" class="minigame-btn secondary">Done</button>
+      </div>
+    </div>
+
+    <!-- Mini-game: Earthquake Survival -->
+    <div id="quake-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>🌋 Earthquake Survival!</h2>
+        <p>Don't touch anything — hold still for 5 seconds!</p>
+        <div id="quake-zone">
+          <div id="quake-rock-icon">🪨</div>
+          <div id="quake-bar-wrap"><div id="quake-bar"></div></div>
+        </div>
+        <div id="quake-status">Press Start then keep still!</div>
+        <button id="quake-start" class="minigame-btn">Start!</button>
+        <div id="quake-result" class="hidden">
+          <p id="quake-outcome"></p>
+          <button id="quake-again" class="minigame-btn">Try Again</button>
+          <button id="quake-close" class="minigame-btn secondary">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rock Journal Modal -->
+    <div id="journal-modal" class="modal hidden">
+      <div class="modal-content journal-content">
+        <h2>📖 Rock Journal</h2>
+        <div id="journal-entries"></div>
+        <button id="journal-close" class="minigame-btn secondary">Close</button>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+      <div class="modal-content settings-content">
+        <h2>⚙️ Settings</h2>
+        <div class="settings-row">
+          <label>Sound Effects</label>
+          <button id="toggle-sfx" class="toggle-btn" data-on="true">ON</button>
+        </div>
+        <div class="settings-row">
+          <label>Ambient Sound</label>
+          <button id="toggle-ambient" class="toggle-btn" data-on="false">OFF</button>
+        </div>
+        <div class="settings-row">
+          <label>Particle Effects</label>
+          <button id="toggle-particles" class="toggle-btn" data-on="true">ON</button>
+        </div>
+        <hr class="settings-hr">
+        <button id="export-card-btn" class="minigame-btn">📸 Export Rock Card</button>
+        <button id="open-journal-btn" class="minigame-btn secondary">📖 Open Journal</button>
+        <hr class="settings-hr">
+        <button id="reset-save-btn" class="minigame-btn danger">🗑️ Reset Save Data</button>
+        <button id="settings-close" class="minigame-btn secondary settings-close-btn">Close</button>
+      </div>
+    </div>
+
+    <!-- Streak Toast -->
+    <div id="streak-toast" class="hidden" role="alert" aria-live="polite">
+      <span id="streak-icon">🔥</span>
+      <span id="streak-text"></span>
+    </div>
+
+    <!-- Export Card Canvas (hidden) -->
+    <canvas id="export-canvas"></canvas>
+
   </div>
+
+  <!-- Settings / Journal buttons in header area (injected by JS) -->
   <script src="game.js"></script>
 </body>
 </html>
