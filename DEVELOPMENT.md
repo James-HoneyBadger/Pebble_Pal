@@ -1,12 +1,12 @@
 # Development Guide
 
-Technical reference for developing and extending Pet Rock.
+Technical reference for developing and extending Pebble Pal.
 
 ---
 
 ## Architecture Overview
 
-Pet Rock is a **single-page web app** wrapped in platform-specific shells:
+Pebble Pal is a **single-page web app** wrapped in platform-specific shells:
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -93,11 +93,11 @@ Electron main process:
 - **Security** — Context isolation, no node integration, external links open in browser
 
 ### `preload.js` (15 lines)
-Exposes `window.petRock.platform` and `window.petRock.version` via context bridge.
+Exposes `window.pebblePal.platform` and `window.pebblePal.version` via context bridge.
 
 ### `capacitor.config.json`
 Mobile configuration:
-- Bundle ID: `com.petrock.app`
+- Bundle ID: `com.pebblepal.app`
 - Web directory: `www/`
 - iOS: automatic content inset, dark background
 - Android: HTTPS scheme
@@ -106,7 +106,7 @@ Mobile configuration:
 
 ## State Management
 
-All state lives in a single `state` object and is persisted to `localStorage` as JSON. Save key: `petRockState2`.
+All state lives in a single `state` object and is persisted to `localStorage` as JSON. Save key: `pebblePalState2`.
 
 ### Key State Properties
 - `lastSaved` — timestamp used for time-away stat decay on reload
@@ -230,7 +230,7 @@ The `www/` directory is synced from root files via `npm run copy:web`. Both root
 |---------|----------|
 | Stats not updating visually | Check that `updateStats()` is called after modifying `state.stats` |
 | Accessory not showing | Verify CSS positioning class exists for the accessory ID |
-| Save not loading | Check `localStorage.getItem("petRockState2")` in console |
+| Save not loading | Check `localStorage.getItem("pebblePalState2")` in console |
 | New unlock not appearing | Call `renderPickers()` after modifying unlocked arrays |
 | Memory leak from backgrounds | Ensure `clearBgIntervals()` is called before spawning new intervals |
 | D-Bus errors on Linux | Benign Electron/portal warnings — safe to ignore |

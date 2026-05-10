@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Pet Rock</string>
+        <string>Pebble Pal</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -43,7 +43,16 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Status bar: light content (white icons) for dark app background -->
 	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
+	<!-- iPad pointer support -->
+	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Photo library: needed only if user saves rock card to Camera Roll -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Pebble Pal would like to save your rock card to Photos.</string>
 </dict>
 </plist>

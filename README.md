@@ -1,8 +1,8 @@
-# 🪨 Stoned
+# 🪨 Pebble Pal
 
-A virtual pet stone companion app — feed, play, customize, and level up your very own pet rock! Built with vanilla HTML/CSS/JS and available as a desktop app (Windows, macOS, Linux) and mobile app (iOS, Android).
+A virtual pet stone companion app — feed, play, customize, and level up your very own pebble pal! Built with vanilla HTML/CSS/JS and available as a desktop app (Windows, macOS, Linux) and mobile app (iOS, Android).
 
-![Pet Rock](icons/icon.png)
+![Pebble Pal](icons/icon.png)
 
 ## Features
 
@@ -241,4 +241,4 @@ HB_Pet_Rock/
 
 ## License
 
-MIT — do whatever you want with your pet rock. 🪨
+MIT — do whatever you want with your pebble pal. 🪨

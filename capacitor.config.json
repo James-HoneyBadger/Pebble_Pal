@@ -1,6 +1,6 @@
 {
-  "appId": "com.petrock.app",
-  "appName": "Pet Rock",
+  "appId": "com.pebblepal.app",
+  "appName": "Pebble Pal",
   "webDir": "www",
   "server": {
     "androidScheme": "https"
@@ -9,6 +9,6 @@
     "contentInset": "automatic",
     "backgroundColor": "#1a1a2e",
     "preferredContentMode": "mobile",
-    "scheme": "Pet Rock"
+    "scheme": "pebblepal"
   }
 }

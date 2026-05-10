@@ -1,6 +1,6 @@
 node_modules/
 dist/
-www/
+# www/ is committed — it's populated by `npm run copy:web` with no build step
 ios-icons/
 *.log
 .DS_Store
@@ -15,3 +15,7 @@ android/app/build/
 android/.gradle/
 android/build/
 android/local.properties
+# Android signing — NEVER commit these
+android/keystore.properties
+*.jks
+*.keystore

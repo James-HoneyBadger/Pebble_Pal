@@ -1,5 +1,5 @@
 // ============================================================
-//  🪨 Pet Rock — Preload Script (secure bridge)
+//  🪨 Pebble Pal — Preload Script (secure bridge)
 // ============================================================
 // This file runs in a sandboxed context. We don't expose any
 // Node APIs to the renderer — the game is pure browser JS and
@@ -9,7 +9,7 @@
 
 const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld("petRock", {
+contextBridge.exposeInMainWorld("pebblePal", {
   platform: process.platform,
   version: "1.0.0",
   onReset: (cb) => ipcRenderer.on("reset-game", cb),

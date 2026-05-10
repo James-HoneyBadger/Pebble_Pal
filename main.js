@@ -1,5 +1,5 @@
 // ============================================================
-//  🪨 Pet Rock — Electron Main Process
+//  🪨 Pebble Pal — Electron Main Process
 // ============================================================
 const { app, BrowserWindow, Menu, shell, dialog, ipcMain } = require("electron");
 const path = require("path");
@@ -13,7 +13,7 @@ function createWindow() {
     height: 780,
     minWidth: 800,
     minHeight: 600,
-    title: "Pet Rock 🪨",
+    title: "Pebble Pal 🪨",
     backgroundColor: "#1a1a2e",
     show: false, // show after ready-to-show to avoid flash
     webPreferences: {
@@ -69,8 +69,8 @@ function buildMenu() {
                 type: "warning",
                 buttons: ["Cancel", "Reset"],
                 defaultId: 0,
-                title: "Reset Pet Rock",
-                message: "Are you sure you want to reset your pet rock?",
+                title: "Reset Pebble Pal",
+                message: "Are you sure you want to reset your pebble pal?",
                 detail: "This will erase all progress and start fresh.",
               })
               .then(({ response }) => {
@@ -106,9 +106,9 @@ function buildMenu() {
             dialog.showMessageBox(mainWindow, {
               type: "info",
               title: "How to Play",
-              message: "🪨 Pet Rock — How to Play",
+              message: "🪨 Pebble Pal — How to Play",
               detail:
-                "Take care of your pet rock!\n\n" +
+                "Take care of your pebble pal!\n\n" +
                 "• Feed — Give your rock minerals to eat\n" +
                 "• Play — Rock Paper Scissors mini-game\n" +
                 "• Polish — Clean & polish your shiny rock\n" +
@@ -122,13 +122,13 @@ function buildMenu() {
           },
         },
         {
-          label: "About Pet Rock",
+          label: "About Pebble Pal",
           click: () => {
             dialog.showMessageBox(mainWindow, {
               type: "info",
-              title: "About Pet Rock",
-              message: "Pet Rock v1.0.0",
-              detail: "A virtual pet rock companion.\nBecause everyone deserves a rock. 🪨",
+              title: "About Pebble Pal",
+              message: "Pebble Pal v1.0.0",
+              detail: "A virtual pebble pal companion.\nBecause everyone deserves a rock. 🪨",
             });
           },
         },

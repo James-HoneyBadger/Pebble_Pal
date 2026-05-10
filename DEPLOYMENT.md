@@ -1,6 +1,6 @@
 # Deployment Guide
 
-How to build and publish Pet Rock for every platform.
+How to build and publish Pebble Pal for every platform.
 
 ---
 
@@ -23,8 +23,8 @@ npm run build:win
 ### Output
 ```
 dist/
-├── Pet Rock Setup 1.0.0.exe    # NSIS installer
-└── Pet Rock 1.0.0.exe          # Portable executable
+├── Pebble Pal Setup 1.0.0.exe    # NSIS installer
+└── Pebble Pal 1.0.0.exe          # Portable executable
 ```
 
 ### Distribution Options
@@ -55,7 +55,7 @@ npm run build:mac
 ### Output
 ```
 dist/
-└── Pet Rock-1.0.0.dmg          # Disk image installer
+└── Pebble Pal-1.0.0.dmg          # Disk image installer
 ```
 
 ### Code Signing & Notarization (required for distribution)
@@ -69,7 +69,7 @@ dist/
 ```
 3. Notarize with Apple:
 ```bash
-xcrun notarytool submit "dist/Pet Rock-1.0.0.dmg" \
+xcrun notarytool submit "dist/Pebble Pal-1.0.0.dmg" \
   --apple-id "your@email.com" \
   --password "app-specific-password" \
   --team-id "TEAMID" \
@@ -88,8 +88,8 @@ npm run build:linux
 ### Output
 ```
 dist/
-├── Pet Rock-1.0.0.AppImage     # Universal portable app
-└── pet-rock_1.0.0_amd64.deb   # Debian/Ubuntu package
+├── Pebble Pal-1.0.0.AppImage     # Universal portable app
+└── pebble-pal_1.0.0_amd64.deb   # Debian/Ubuntu package
 ```
 
 ### Distribution Options
@@ -126,8 +126,8 @@ npm run ios:open       # Opens Xcode
 In Xcode, under **General**:
 | Setting | Value |
 |---------|-------|
-| Display Name | Pet Rock |
-| Bundle Identifier | com.petrock.app |
+| Display Name | Pebble Pal |
+| Bundle Identifier | com.pebblepal.app |
 | Version | 1.0.0 |
 | Build | 1 |
 | Deployment Target | iOS 16.0 |
@@ -141,10 +141,10 @@ Go to [App Store Connect](https://appstoreconnect.apple.com):
 
 | Field | Value |
 |-------|-------|
-| Name | Pet Rock |
+| Name | Pebble Pal |
 | Primary Language | English (U.S.) |
-| Bundle ID | com.petrock.app |
-| SKU | petrock001 |
+| Bundle ID | com.pebblepal.app |
+| SKU | pebblepal001 |
 | User Access | Full Access |
 
 3. **App Information**:
@@ -229,13 +229,13 @@ Google Play requires signed apps. Generate a keystore:
 
 ```bash
 keytool -genkey -v \
-  -keystore petrock-release.keystore \
-  -alias petrock \
+  -keystore pebble-pal-release.keystore \
+  -alias pebblepal \
   -keyalg RSA -keysize 2048 \
   -validity 10000 \
   -storepass YOUR_SECURE_PASSWORD \
   -keypass YOUR_SECURE_PASSWORD \
-  -dname "CN=James, O=Pet Rock, L=City, ST=State, C=US"
+  -dname "CN=James, O=Pebble Pal, L=City, ST=State, C=US"
 ```
 
 > ⚠️ **CRITICAL**: Back up this keystore file and remember the password! You need it for every future update. Losing it means you can never update the app on Google Play.
@@ -247,9 +247,9 @@ Edit `android/app/build.gradle` and add inside the `android { }` block:
 android {
     signingConfigs {
         release {
-            storeFile file('../../petrock-release.keystore')
+            storeFile file('../../pebble-pal-release.keystore')
             storePassword 'YOUR_SECURE_PASSWORD'
-            keyAlias 'petrock'
+            keyAlias 'pebblepal'
             keyPassword 'YOUR_SECURE_PASSWORD'
         }
     }
@@ -286,13 +286,13 @@ Go to [Google Play Console](https://play.google.com/console):
 
 | Field | Value |
 |-------|-------|
-| App name | Pet Rock |
+| App name | Pebble Pal |
 | Default language | English (US) |
 | App or game | Game |
 | Free or paid | Free |
 
 2. **Store listing** (Grow → Store presence → Main store listing):
-   - Short description (80 chars): `Adopt a virtual pet rock! Feed, play, dress up & level up your rock! 🪨`
+   - Short description (80 chars): `Adopt a virtual pebble pal! Feed, play, dress up & level up your rock! 🪨`
    - Full description: (same as iOS description above)
    - **App icon**: 512 × 512 PNG (use `ios-icons/icon-1024.png` resized)
    - **Feature graphic**: 1024 × 500 PNG (create a promotional banner)
@@ -306,7 +306,7 @@ Go to [Google Play Console](https://play.google.com/console):
 
 4. **Privacy policy**:
    - Provide a URL to your privacy policy
-   - Simple statement: "Pet Rock does not collect, store, or transmit any personal data. All game data is stored locally on your device."
+   - Simple statement: "Pebble Pal does not collect, store, or transmit any personal data. All game data is stored locally on your device."
 
 5. **Data safety** (Policy → App content → Data safety):
    - Does not collect or share user data
@@ -326,7 +326,7 @@ Go to [Google Play Console](https://play.google.com/console):
 1. Go to **Testing** → **Internal testing** → **Create new release**
 2. Opt in to **Google Play App Signing** (recommended)
 3. Upload your `.aab` file
-4. Add release notes: "Initial release — adopt your virtual pet rock!"
+4. Add release notes: "Initial release — adopt your virtual pebble pal!"
 5. **Review and start rollout**
 6. Add testers by email (up to 100)
 7. Available immediately — no review wait

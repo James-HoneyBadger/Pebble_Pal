@@ -1,4 +1,4 @@
-package com.petrock.app;
+package com.pebblepal.app;
 
 import com.getcapacitor.BridgeActivity;
 

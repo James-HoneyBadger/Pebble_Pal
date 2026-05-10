@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Export method: app-store submits directly to App Store Connect -->
+    <key>method</key>
+    <string>app-store</string>
+
+    <!-- Upload directly to App Store Connect after export -->
+    <key>destination</key>
+    <string>upload</string>
+
+    <!-- Let Xcode manage signing automatically (uses your Apple Developer account) -->
+    <key>signingStyle</key>
+    <string>automatic</string>
+
+    <!-- Strip Swift symbols to reduce binary size -->
+    <key>stripSwiftSymbols</key>
+    <true/>
+
+    <!-- Upload dSYM files for crash reporting in Xcode Organizer -->
+    <key>uploadSymbols</key>
+    <true/>
+
+    <!-- Bitcode is deprecated as of Xcode 14 — keep disabled -->
+    <key>uploadBitcode</key>
+    <false/>
+</dict>
+</plist>

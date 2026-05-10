@@ -1,7 +1,7 @@
 {
-  "name": "pet-rock",
+  "name": "pebble-pal",
   "version": "1.0.0",
-  "description": "A fun Pet Rock virtual pet game",
+  "description": "A fun Pebble Pal virtual pet game",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -25,8 +25,8 @@
     "electron-builder": "^26.8.1"
   },
   "build": {
-    "appId": "com.petrock.app",
-    "productName": "Pet Rock",
+    "appId": "com.pebblepal.app",
+    "productName": "Pebble Pal",
     "files": [
       "main.js",
       "preload.js",
