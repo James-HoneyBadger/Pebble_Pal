@@ -28,63 +28,71 @@ The game logic is **100% vanilla JS** with no frameworks or build tools. The sam
 ### `index.html` (197 lines)
 Main game structure. Key sections:
 - **Header** — Name display, rename button (with `aria-label`), age, level, XP bar
-- **Left panel** — Stats bars (5 stats with `role="progressbar"` and `aria-valuenow`) + achievement trophy grid
+- **Left panel** — Stats bars (5 stats with `role="progressbar"` and `aria-valuenow`) + achievement trophy grid + stickers grid + daily challenges panel
 - **Center** — Rock stage with environment layer, rock body, face, accessories, thought bubble (`aria-live="polite"`), particles
 - **Right panel** — Action buttons (8 actions), food picker, and customize panel (4 tabs with `role="tablist"`: Skin/Eyes/Hats/Scene)
 - **Message log** — Scrollable event log at bottom (`role="log"`, `aria-live="polite"`)
-- **Modals** — RPS mini-game modal, achievement toast (`role="alert"`), level-up overlay
+- **Modals** — 5 mini-game modals (RPS, Stone Skip, Gem Match, Earthquake, Rock Stack), achievement toast (`role="alert"`), level-up overlay, confirm dialog
 - **Security** — Content Security Policy meta tag, `viewport-fit=cover`
 
-### `style.css` (418 lines)
+### `style.css` (~640 lines)
 All visuals and animations. Key sections:
 - **Layout** — 3-column CSS Grid (`210px | 1fr | 240px`), responsive breakpoint at 600px → single-column
 - **Rock rendering** — Radial gradients using CSS custom properties (`--rock-color`, `--rock-highlight`, `--rock-shadow`)
 - **Face system** — `.eye`, `.pupil`, `#mouth` with state classes (`.face-happy`, `.face-sad`, `.face-sleeping`, `.face-excited`, `.face-love`)
-- **Eye styles** — `.eyes-big`, `.eyes-anime`, `.eyes-sleepy`, `.eyes-cyclops`, `.eyes-star` modify eye/pupil dimensions
+- **Eye styles** — `.eyes-big`, `.eyes-anime`, `.eyes-sleepy`, `.eyes-cyclops`, `.eyes-star`, `.eyes-heart`, `.eyes-sparkle`, `.eyes-diamond` modify eye/pupil dimensions
 - **Accessories** — Absolutely positioned SVG containers (`#accessory-display` for head, `#face-accessory` for face items) with per-item positioning classes
-- **Environments** — Background gradients + pseudo-element decorations on `#env-layer`; JS-spawned particles for stars, bubbles, snowflakes
-- **Animations** — `bounce`, `wiggle`, `spin`, `jelly`, `float`, `sleep-bob`, `dance`, `walk-bob`, particle float, Zzz, sparkle, music note, stat floaters
-- **Stat floaters** — `.stat-floater` with `floater-up` keyframe animation for "+10 😊" text
+- **Environments** — Background gradients + pseudo-element decorations on `#env-layer`; JS-spawned particles for stars, bubbles, snowflakes; 13 total environments
+- **Animations** — `bounce`, `wiggle`, `spin`, `jelly`, `float`, `sleep-bob`, `dance`, `walk-bob`, `anim-hit`, `anim-celebrate`, particle float, Zzz, sparkle, music note, stat floaters
+- **Particle effects** — `.burst-particle` (radial burst), `.screen-flash` (full-screen color flash), `.rock-ripple` (tap ripple), `.stat-floater` (arc-up indicators)
+- **Mini-game UIs** — Stone Skip lane/cursor/target, Gem Match card grid, Earthquake bar, Rock Stack lane/cursor/target, zone glow (`.lit` state)
+- **Daily challenges** — `.challenge-item`, `.challenge-bar`, `.challenge-progress` for rendered challenge cards
 - **Mobile responsive** — `@media(max-width:600px)` stacks layout, shrinks rock, compacts buttons into 4-column grid, reduces font sizes
 - **Reduced motion** — `@media(prefers-reduced-motion:reduce)` disables all animations and transitions
 
-### `game.js` (1069 lines)
-All game logic in an IIFE. Key sections:
+### `game.js` (~2357 lines)
+All game logic in an IIFE (`"use strict"`). Key sections:
 
-| Section | Lines | Description |
-|---------|-------|-------------|
-| State object | 8–38 | All mutable game state (stats, unlocks, counters, timestamps) |
-| DOM cache | 43–70 | Query selectors cached at startup |
-| Data: Skins | 76–87 | 10 rock skins with color definitions |
-| Data: Eye Styles | 90–97 | 6 eye style CSS class mappings |
-| Data: Accessories | 100–128 | 13 accessories with inline SVG markup |
-| Data: Backgrounds | 131–140 | 8 environment backgrounds |
-| Data: Foods | 143–152 | 8 food types with stat effects |
-| Data: Achievements | 155–176 | 20 achievement definitions with check functions |
-| Data: Dialogue | 178–222 | Categorized dialogue banks (feed, play, clean, etc.) |
-| Helpers | 226–230 | `clamp()`, `pick()`, `ts()`, `esc()` (XSS sanitizer) |
-| XP & Leveling | 232–260 | `addXP()`, `updateXPBar()`, `showLevelUp()`, `grantCustomizeXP()` |
-| Unlock checks | 262–330 | Scans all data tables for newly unlockable content |
-| Achievements | 333–370 | Check, toast notification, optimized trophy grid rendering |
-| UI updates | 372–445 | `updateStats()` (with ARIA updates), `updateMood()`, `updateFace()`, `updateSkin()`, `updateAccessory()`, `updateBackground()` |
-| Environment FX | 438–490 | Interval-tracked `spawnBubbles()`, `spawnSnowflakes()`, `clearBgIntervals()` |
-| Picker rendering | 492–598 | Dynamic button generation for all customization tabs + food |
-| Thought bubbles | 600–606 | Show/hide with timeout |
-| Rock animations | 608–610 | Add/remove CSS animation classes |
-| Particles + Floaters | 612–660 | Emoji particles, stat change floaters, sleep Zzz, sparkles, music notes |
-| Eye tracking | 668–686 | Mouse + touch pupil movement with div/zero guard |
-| Cooldown system | 688–693 | Disable action buttons temporarily |
-| Feed action | 695–720 | Applies food stats, spawns particles + floaters, logs |
-| Actions object | 722–820 | All 8 action handlers (feed, play, clean, sleep, talk, pet, exercise, music) |
-| RPS mini-game | 822–856 | Rock Paper Scissors with balanced outcomes |
-| Stat decay | 858–870 | Stats decrease over time (5s interval) |
-| Idle thoughts | 872–888 | Random thought bubbles (15s interval, context-aware) |
-| Age system | 890–900 | Age increments (every 12 ticks = ~60s) |
-| Critical warnings | 902–908 | Low-stat warnings in message log |
-| Rock click | 910–924 | Random reactions on clicking the rock |
-| Event binding | 926–970 | All DOM event listeners (buttons, tabs, RPS, rename, touch) |
-| Save/Load | 972–1005 | localStorage persistence with time-away decay + cooldown reset |
-| Init | 1007–1040 | Load → setup → render → start intervals |
+| Section | Description |
+|---------|-------------|
+| State object | All mutable game state (stats, unlocks, counters, timestamps, daily challenges) |
+| DOM cache | Query selectors cached at startup |
+| Data: Skins | 15 rock skins with color definitions (unlocks up to level 50) |
+| Data: Eye Styles | 9 eye style CSS class mappings (unlocks up to level 25) |
+| Data: Accessories | 18 accessories with inline SVG markup (unlocks up to level 42) |
+| Data: Backgrounds | 13 environment backgrounds (unlocks up to level 48) |
+| Data: Foods | 12 food types with stat effects (unlocks up to level 48) |
+| Data: Stickers | Sticker definitions (mini-game, challenge, achievement stickers) |
+| Data: Achievements | 26 achievement definitions with check functions |
+| Data: Dialogue | Categorized dialogue banks (feed, play, clean, idle, etc.) |
+| Helpers | `clamp()`, `pick()`, `ts()`, `esc()` (XSS sanitizer) |
+| XP & Leveling | `addXP()`, `updateXPBar()`, `showLevelUp()`, `grantCustomizeXP()` |
+| Unlock checks | Scans all data tables for newly unlockable content on level-up |
+| Achievements & Stickers | Check, toast notification, trophy/sticker grid rendering |
+| UI updates | `updateStats()`, `updateMood()`, `updateFace()`, `updateSkin()`, `updateAccessory()`, `updateBackground()` |
+| Audio | `getAudioCtx()`, `playTone()`, `playChord()`, `SFX` object, `startAmbient()`, `stopAmbient()` |
+| Particles & Effects | `spawnParticle()`, `spawnMulti()`, `spawnBurst()`, `flashScreen()`, `spawnRipple()`, `showStatFloater()`, `animateRock()` |
+| Environment FX | Interval-tracked `spawnBubbles()`, `spawnSnowflakes()`, `clearBgIntervals()` |
+| Picker rendering | Dynamic button generation for all customization tabs + food |
+| Eye tracking | `initEyeTracking()` — mouse + touch pupil movement with distance guard |
+| Cooldown system | Disable action buttons temporarily after actions |
+| Modal helpers | `trapFocus()`, `focusFirstInModal()`, close handlers with Escape + backdrop |
+| Feed action | Applies food stats, spawns particles + floaters, tracks fancy-feast challenge |
+| Actions object | All 8 action handlers — each increments stat counters and calls `checkDailyChallenges()` |
+| RPS mini-game | Rock Paper Scissors with biased rock picks + win tracking |
+| Stone Skip mini-game | Timed tap-zone game with cursor animation, glow, and best-score tracking |
+| Gem Match mini-game | 8-card memory matching game with flip animation and fast-match sticker |
+| Earthquake Survival | Hold-still game with mouse/touch movement detection |
+| Rock Stack mini-game | Moving-bar tap game with live count and best-score tracking |
+| Daily Challenges | `CHALLENGE_POOL` (15 challenges), `refreshDailyChallenges()`, `checkDailyChallenges()`, `renderChallenges()` |
+| Seasonal Events | `checkSeasonalEvent()` — automatic holiday bonuses by month/date |
+| Stat decay | Stats decrease over time (5s interval) |
+| Idle thoughts | Random context-aware thought bubbles (15s interval) |
+| Age system | Age increments every ~60 real seconds |
+| Rock click | Random reactions on tapping the rock |
+| Event binding | All DOM event listeners (buttons, tabs, mini-games, rename, touch, Escape) |
+| Save/Load | localStorage persistence with time-away decay and cooldown reset |
+| Init | Load → setup → render → start all intervals → init eye tracking + challenges |
 
 ### `main.js` (172 lines)
 Electron main process:
@@ -139,6 +147,7 @@ When the game loads, it compares `Date.now()` with `state.lastSaved`. If more th
 | Walk | 6 |
 | RPS game | 6 |
 | Achievement unlocked | 15 |
+| Daily challenge completed | 15–35 |
 | Age tick (daily) | 2 |
 
 ---
@@ -150,6 +159,24 @@ In `game.js`, add to the `SKINS` object:
 ```javascript
 myskin: { label: "My Skin", color: "#hex", hi: "#hex", sh: "#hex", unlock: { level: N } },
 ```
+
+### Adding a New Eye Style
+1. Add to the `EYE_STYLES` object in `game.js`:
+```javascript
+myeye: { label: "My Eyes", css: "eyes-myeye", unlock: { level: N } },
+```
+2. Add CSS in `style.css`:
+```css
+.eyes-myeye .pupil { /* custom pupil styling */ }
+```
+
+### Adding a Daily Challenge
+Add to the `CHALLENGE_POOL` array in `game.js`:
+```javascript
+{ id: "my_challenge", icon: "🎯", name: "Challenge Name", desc: "Do the thing N times",
+  type: "counter", statKey: "totalFeeds", target: N, xpReward: 20 },
+```
+Supported types: `"counter"` (uses `state[statKey]`), `"stat"` (uses `state.stats[statKey]`), `"special"` (manual `dc.specialProgress`).
 
 ### Adding a New Accessory
 1. Add to the `ACCESSORIES` object in `game.js` with inline SVG:
@@ -233,4 +260,5 @@ The `www/` directory is synced from root files via `npm run copy:web`. Both root
 | Save not loading | Check `localStorage.getItem("pebblePalState2")` in console |
 | New unlock not appearing | Call `renderPickers()` after modifying unlocked arrays |
 | Memory leak from backgrounds | Ensure `clearBgIntervals()` is called before spawning new intervals |
+| Daily challenge not progressing | Confirm the action handler calls `checkDailyChallenges()` after updating `state` |
 | D-Bus errors on Linux | Benign Electron/portal warnings — safe to ignore |

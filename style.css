@@ -169,20 +169,26 @@ header h1{
 
 /* ===== PARTICLES ===== */
 #particles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.particle{position:absolute;animation:float-up 1.5s ease-out forwards;font-size:1.2rem;pointer-events:none}
-@keyframes float-up{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(.5)}}
-.stat-floater{position:absolute;font-size:.85rem;font-weight:700;animation:floater-up 1.2s ease-out forwards;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.5)}
-@keyframes floater-up{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-50px)}}
+.particle{position:absolute;animation:float-up 1.6s ease-out forwards;pointer-events:none}
+@keyframes float-up{0%{opacity:1;transform:translateY(0) translateX(0) scale(1.1)}100%{opacity:0;transform:translateY(-80px) translateX(var(--dx,0px)) scale(.4)}}
+.burst-particle{position:fixed;pointer-events:none;z-index:998;animation:burst-out var(--dur,1.1s) ease-out forwards}
+@keyframes burst-out{0%{opacity:1;transform:translate(-50%,-50%) scale(1.3) rotate(0deg)}100%{opacity:0;transform:translate(calc(-50% + var(--bx,0px)),calc(-50% + var(--by,-60px))) scale(.15) rotate(var(--brot,360deg))}}
+.screen-flash{position:fixed;inset:0;pointer-events:none;z-index:997;animation:flash-fade .7s ease-out forwards}
+@keyframes flash-fade{0%{opacity:.55}100%{opacity:0}}
+.rock-ripple{position:absolute;border-radius:50%;border:2px solid rgba(255,255,255,.65);pointer-events:none;animation:ripple-out .55s ease-out forwards;left:50%;top:50%;transform:translate(-50%,-50%);width:38px;height:38px}
+@keyframes ripple-out{0%{width:38px;height:38px;opacity:.75}100%{width:130px;height:130px;opacity:0}}
+.stat-floater{position:absolute;font-size:.85rem;font-weight:700;animation:floater-arc 1.35s ease-out forwards;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+@keyframes floater-arc{0%{opacity:1;transform:translateY(0) translateX(0) scale(1)}100%{opacity:0;transform:translateY(-55px) translateX(var(--fdx,8px)) scale(.8)}}
 
 /* ===== ANIMATIONS ===== */
-.anim-bounce{animation:bounce .5s ease}
-@keyframes bounce{0%,100%{transform:translateY(0)}30%{transform:translateY(-20px)}50%{transform:translateY(-10px)}70%{transform:translateY(-15px)}}
+.anim-bounce{animation:bounce .55s cubic-bezier(.36,.07,.19,.97)}
+@keyframes bounce{0%{transform:translateY(0) scaleX(1) scaleY(1)}20%{transform:translateY(-28px) scaleX(.9) scaleY(1.1)}45%{transform:translateY(-12px) scaleX(1.05) scaleY(.96)}65%{transform:translateY(-20px) scaleX(.93) scaleY(1.07)}82%{transform:translateY(-5px) scaleX(1.03) scaleY(.98)}100%{transform:translateY(0) scaleX(1) scaleY(1)}}
 .anim-wiggle{animation:wiggle .6s ease}
 @keyframes wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-5deg)}80%{transform:rotate(5deg)}}
 .anim-spin{animation:spin .8s ease}
 @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-.anim-jelly{animation:jelly .6s ease}
-@keyframes jelly{0%,100%{transform:scale(1)}25%{transform:scale(1.1,.9)}50%{transform:scale(.9,1.1)}75%{transform:scale(1.05,.95)}}
+.anim-jelly{animation:jelly .65s ease}
+@keyframes jelly{0%,100%{transform:scale(1,1)}15%{transform:scale(1.18,.84)}30%{transform:scale(.85,1.16)}45%{transform:scale(1.1,.93)}60%{transform:scale(.96,1.08)}75%{transform:scale(1.03,.98)}}
 .anim-float{animation:float 3s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 .anim-sleep{animation:sleep-bob 2s ease-in-out infinite}
@@ -191,6 +197,10 @@ header h1{
 @keyframes dance{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-5px) rotate(-5deg)}75%{transform:translateX(5px) rotate(5deg)}}
 .anim-walk{animation:walk-bob .3s ease infinite}
 @keyframes walk-bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(3deg)}}
+.anim-hit{animation:hit .45s ease}
+@keyframes hit{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px) scale(.95)}50%{transform:translateX(8px) scale(1.03)}75%{transform:translateX(-4px)}}
+.anim-celebrate{animation:celebrate .7s cubic-bezier(.36,.07,.19,.97)}
+@keyframes celebrate{0%,100%{transform:scale(1) rotate(0)}25%{transform:scale(1.18) rotate(-8deg)}50%{transform:scale(1.12) rotate(8deg)}75%{transform:scale(1.15) rotate(-5deg)}}
 
 .zzz{position:absolute;font-size:1.5rem;animation:zzz-float 2s ease-in-out infinite;color:var(--energy-color);opacity:.8}
 @keyframes zzz-float{0%{opacity:0;transform:translate(0,0) scale(.5)}50%{opacity:.8}100%{opacity:0;transform:translate(20px,-40px) scale(1.2)}}
@@ -253,7 +263,10 @@ header h1{
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;
   justify-content:center;z-index:100;backdrop-filter:blur(4px)}
 .modal-content{background:var(--bg-secondary);border-radius:20px;padding:28px;max-width:400px;width:90%;
-  text-align:center;border:1px solid rgba(255,255,255,.1);box-shadow:0 20px 60px rgba(0,0,0,.5);animation:modal-in .3s ease}
+  text-align:center;border:1px solid rgba(255,255,255,.1);box-shadow:0 20px 60px rgba(0,0,0,.5);animation:modal-in .3s ease;position:relative}
+.modal-close-x{position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.4rem;line-height:1;color:var(--text-muted);cursor:pointer;padding:4px 8px;border-radius:6px;opacity:.6;transition:opacity .15s,background .15s}
+.modal-close-x:hover{opacity:1;background:rgba(255,255,255,.08)}
+#food-cancel-btn{margin-top:8px;width:100%}
 @keyframes modal-in{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
 .modal-content h2{margin-bottom:6px}.modal-content p{color:var(--text-muted);margin-bottom:16px}
 #rps-choices{display:flex;gap:12px;justify-content:center}
@@ -502,7 +515,11 @@ header h1{
 #stoneskip-target{
   position:absolute;top:0;bottom:0;left:35%;width:30%;
   background:rgba(107,203,119,.25);border-left:2px solid #6bcb77;border-right:2px solid #6bcb77;
-  transition:opacity .2s;
+  transition:opacity .2s,box-shadow .1s,background .1s;
+}
+#stoneskip-target.lit{
+  box-shadow:0 0 18px 5px rgba(107,203,119,.7);
+  background:rgba(107,203,119,.55);
 }
 #stoneskip-cursor{
   position:absolute;top:50%;transform:translateY(-50%);
@@ -561,3 +578,107 @@ header h1{
   font-size:.65rem;color:var(--text-muted);opacity:.7;white-space:nowrap;z-index:3;
   background:rgba(0,0,0,.3);padding:2px 8px;border-radius:8px;
 }
+
+/* ===== NEW EYE STYLES ===== */
+.eyes-heart .pupil{background:none;width:14px;height:14px}
+.eyes-heart .pupil::before{content:'♥';font-size:15px;color:#e94560;position:absolute;top:-2px;left:0}
+.eyes-heart .pupil::after{display:none}
+.eyes-sparkle .pupil{background:none;width:14px;height:14px}
+.eyes-sparkle .pupil::before{content:'✦';font-size:14px;color:#ffd93d;position:absolute;top:-2px;left:1px}
+.eyes-sparkle .pupil::after{display:none}
+.eyes-diamond .eye{border-radius:0;transform:rotate(45deg);width:20px;height:20px;overflow:visible}
+.eyes-diamond .pupil{width:10px;height:10px;top:5px;left:5px;border-radius:0}
+
+/* ===== NEW ACCESSORY POSITIONS ===== */
+#accessory-display.acc-butterfly{top:-28px;left:50%;transform:translateX(-50%)}
+#accessory-display.acc-scarf{bottom:-20px;left:50%;transform:translateX(-50%)}
+#accessory-display.acc-pirate{top:-36px;left:50%;transform:translateX(-50%)}
+#accessory-display.acc-helmet{top:-44px;left:50%;transform:translateX(-50%)}
+#accessory-display.acc-bowtie{bottom:-18px;left:50%;transform:translateX(-50%)}
+
+/* ===== NEW ENVIRONMENT THEMES ===== */
+.env-arctic #env-layer{background:linear-gradient(to bottom,#8ab4c4 0%,#b0d0e0 40%,#d8edf5 70%,#f0f8ff 100%)}
+.env-arctic #env-layer::before{content:'🌨';position:absolute;top:15%;left:20%;font-size:1.8rem;animation:cloud-drift 18s linear infinite}
+.env-arctic #env-layer::after{content:'🧊';position:absolute;bottom:4%;right:8%;font-size:2rem}
+.env-jungle #env-layer{background:linear-gradient(to bottom,#1a4a1a 0%,#2d6e2d 40%,#3a8a3a 70%,#2d6e2d 100%)}
+.env-jungle #env-layer::before{content:'🌴';position:absolute;bottom:0;left:5%;font-size:3rem}
+.env-jungle #env-layer::after{content:'🦜';position:absolute;top:15%;right:10%;font-size:1.6rem;animation:fish-swim 6s ease-in-out infinite}
+.env-castle #env-layer{background:linear-gradient(to bottom,#3a3060 0%,#4a4070 40%,#5a5080 70%,#8a7090 100%)}
+.env-castle #env-layer::before{content:'🏰';position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:3rem}
+.env-castle #env-layer::after{content:'🌙';position:absolute;top:10%;right:15%;font-size:1.8rem}
+.env-nebula #env-layer{background:radial-gradient(ellipse at 30% 40%,#3d0070 0%,#0a0a2e 40%,#1a0030 70%,#000 100%)}
+.env-nebula #rock-stage{border-color:rgba(150,50,255,.2)}
+.env-dream #env-layer{background:linear-gradient(to bottom,#4a0860 0%,#7a1a8a 30%,#9a3aaa 60%,#ca6aaa 100%)}
+.env-dream #env-layer::before{content:'⭐';position:absolute;top:12%;left:18%;font-size:1.2rem;animation:twinkle 3s ease-in-out infinite}
+.env-dream #env-layer::after{content:'🌙';position:absolute;top:8%;right:20%;font-size:1.6rem}
+
+/* ===== DAILY CHALLENGES PANEL ===== */
+#challenges-panel{margin-top:10px}
+#challenges-panel h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px}
+#challenge-list{display:flex;flex-direction:column;gap:7px}
+.challenge-item{
+  display:flex;align-items:flex-start;gap:8px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;padding:8px 10px;transition:all .2s;
+}
+.challenge-item.done{opacity:.6;border-color:rgba(107,203,119,.3);background:rgba(107,203,119,.06)}
+.challenge-icon{font-size:1.2rem;flex-shrink:0;line-height:1.2}
+.challenge-info{flex:1;min-width:0}
+.challenge-name{font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:2px}
+.challenge-desc{font-size:.67rem;color:var(--text-muted);margin-bottom:4px}
+.challenge-bar-wrap{height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.challenge-bar{height:100%;background:linear-gradient(90deg,var(--accent),#ffd93d);border-radius:3px;transition:width .4s ease}
+.challenge-progress{font-size:.63rem;color:var(--text-muted);margin-top:3px}
+.challenge-empty{font-size:.75rem;color:var(--text-muted);text-align:center;padding:12px 0}
+
+/* ===== ROCK STACK MINI-GAME ===== */
+#stack-lane{
+  position:relative;height:48px;background:rgba(77,150,255,.08);border-radius:10px;
+  margin:16px 0 8px;overflow:hidden;border:1px solid rgba(77,150,255,.2);
+}
+#stack-target{
+  position:absolute;top:0;bottom:0;left:27%;width:46%;
+  background:rgba(107,203,119,.25);border-left:2px solid #6bcb77;border-right:2px solid #6bcb77;
+  transition:opacity .15s;
+}
+#stack-cursor{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:20px;height:20px;border-radius:4px;background:#e94560;
+  box-shadow:0 0 8px rgba(233,69,96,.5);transition:background .12s;
+}
+#stack-info{font-size:.82rem;color:var(--text-muted);margin-bottom:6px}
+#stack-status{font-size:.82rem;color:var(--text-muted);margin-bottom:4px;min-height:1.2em}
+
+/* ===== ONBOARDING OVERLAY ===== */
+.onboarding-overlay{
+  position:fixed;inset:0;z-index:9999;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.72);backdrop-filter:blur(4px);
+}
+.onboarding-card{
+  background:linear-gradient(135deg,#1a1a2e,#16213e);
+  border:1.5px solid rgba(255,255,255,.12);border-radius:24px;
+  padding:36px 32px 28px;max-width:340px;width:90%;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.onboarding-icon{font-size:3rem;margin-bottom:12px}
+.onboarding-title{font-size:1.2rem;font-weight:800;color:var(--text);margin:0 0 10px}
+.onboarding-body{font-size:.88rem;color:var(--text-muted);line-height:1.5;margin:0 0 20px}
+.onboarding-dots{display:flex;justify-content:center;gap:6px;margin-bottom:18px}
+.ob-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .2s}
+.ob-dot.active{background:var(--accent)}
+.onboarding-btn{background:var(--accent);border:none;border-radius:12px;padding:11px 30px;color:white;font-size:.95rem;font-weight:700;cursor:pointer;width:100%;transition:opacity .2s}
+.onboarding-btn:hover{opacity:.88}
+
+/* ===== RAINBOW SKIN ===== */
+@keyframes rainbow-cycle{
+  0%  {background:radial-gradient(ellipse at 35% 30%,#ff9999,#ff6b6b 50%,#cc3333)}
+  16% {background:radial-gradient(ellipse at 35% 30%,#ffcc88,#ff9933 50%,#cc6600)}
+  33% {background:radial-gradient(ellipse at 35% 30%,#ffff88,#ffd93d 50%,#ccaa00)}
+  50% {background:radial-gradient(ellipse at 35% 30%,#99ff99,#6bcb77 50%,#33aa33)}
+  66% {background:radial-gradient(ellipse at 35% 30%,#99ccff,#4d96ff 50%,#2244cc)}
+  83% {background:radial-gradient(ellipse at 35% 30%,#ff99ff,#d47eba 50%,#aa44cc)}
+  100%{background:radial-gradient(ellipse at 35% 30%,#ff9999,#ff6b6b 50%,#cc3333)}
+}
+.rainbow-skin{animation:rainbow-cycle 4s linear infinite!important}
+@media(prefers-reduced-motion:reduce){.rainbow-skin{animation:none!important;background:radial-gradient(ellipse at 35% 30%,#ffcc88,#ff9933 50%,#cc6600)!important}}

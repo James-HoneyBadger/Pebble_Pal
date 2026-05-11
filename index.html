@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="format-detection" content="telephone=no">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data: blob:">
   <title>🪨 My Pebble Pal</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -71,6 +71,11 @@
           <h2>Stickers <span id="sticker-count">0/0</span></h2>
           <div id="stickers-list"></div>
         </div>
+
+        <div id="challenges-panel" class="panel">
+          <h2>Daily Challenges</h2>
+          <div id="challenge-list"></div>
+        </div>
       </div>
 
       <!-- Center: Rock Stage -->
@@ -133,6 +138,7 @@
           <div id="food-picker" class="sub-picker hidden">
             <h3>Pick a Snack</h3>
             <div id="food-options" class="picker-grid"></div>
+            <button id="food-cancel-btn" class="minigame-btn secondary">Cancel</button>
           </div>
         </div>
 
@@ -168,14 +174,14 @@
     <!-- Mini-Game Modal -->
     <div id="minigame-modal" class="modal hidden">
       <div class="modal-content">
+        <button class="modal-close-x" id="minigame-exit-btn" aria-label="Close">×</button>
         <h2 id="minigame-title">Pick a Game!</h2>
         <p id="minigame-desc">Choose how to play with <span id="minigame-rock-name">Rocky</span>!</p>
         <div id="game-picker">
           <button class="game-pick-btn" data-game="rps">🪨📄✂️<br><span>Rock Paper Scissors</span></button>
           <button class="game-pick-btn" data-game="stoneskip">🌊<br><span>Stone Skip</span></button>
           <button class="game-pick-btn" data-game="gemmatch">💎<br><span>Gem Match</span></button>
-          <button class="game-pick-btn" data-game="quake">🌋<br><span>Earthquake!</span></button>
-        </div>
+          <button class="game-pick-btn" data-game="quake">🌋<br><span>Earthquake!</span></button>          <button class="game-pick-btn" data-game="rockstack">🗼<br><span>Rock Stack</span></button>        </div>
         <div id="rps-game" class="hidden">
           <div id="rps-choices">
             <button class="rps-btn" data-choice="rock">🪨<br>Rock</button>
@@ -223,6 +229,7 @@
     <!-- Mini-game: Stone Skip -->
     <div id="stoneskip-modal" class="modal hidden">
       <div class="modal-content">
+        <button class="modal-close-x" id="stoneskip-exit-btn" aria-label="Close">×</button>
         <h2>🌊 Stone Skip!</h2>
         <p>Tap the button to the rhythm — each hit at the right time is a skip!</p>
         <div id="stoneskip-lane">
@@ -243,6 +250,7 @@
     <!-- Mini-game: Gem Match -->
     <div id="gemmatch-modal" class="modal hidden">
       <div class="modal-content">
+        <button class="modal-close-x" id="gemmatch-exit-btn" aria-label="Close">×</button>
         <h2>💎 Gem Match!</h2>
         <p>Memorise and match the gem pairs!</p>
         <div id="gemmatch-grid"></div>
@@ -254,6 +262,7 @@
     <!-- Mini-game: Earthquake Survival -->
     <div id="quake-modal" class="modal hidden">
       <div class="modal-content">
+        <button class="modal-close-x" id="quake-exit-btn" aria-label="Close">×</button>
         <h2>🌋 Earthquake Survival!</h2>
         <p>Don't touch anything — hold still for 5 seconds!</p>
         <div id="quake-zone">
@@ -270,9 +279,31 @@
       </div>
     </div>
 
+    <!-- Mini-game: Rock Stack -->
+    <div id="rockstack-modal" class="modal hidden">
+      <div class="modal-content">
+        <button class="modal-close-x" id="rockstack-exit-btn" aria-label="Close">×</button>
+        <h2>🗼 Rock Stack!</h2>
+        <p>Tap when the cursor is inside the highlighted zone!</p>
+        <div id="stack-lane">
+          <div id="stack-target"></div>
+          <div id="stack-cursor"></div>
+        </div>
+        <div id="stack-status">Tap when the cursor is in the zone!</div>
+        <div id="stack-info">Stacked: <strong><span id="stack-count">0</span></strong> &nbsp;|&nbsp; Lives: <span id="stack-lives">❤️❤️❤️</span></div>
+        <button id="stack-tap" class="minigame-btn">STACK!</button>
+        <div id="stack-result" class="hidden">
+          <p id="stack-outcome"></p>
+          <button id="stack-again" class="minigame-btn">Try Again</button>
+          <button id="stack-close" class="minigame-btn secondary">Done</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Rock Journal Modal -->
     <div id="journal-modal" class="modal hidden">
       <div class="modal-content journal-content">
+        <button class="modal-close-x" id="journal-exit-btn" aria-label="Close">×</button>
         <h2>📖 Rock Journal</h2>
         <div id="journal-entries"></div>
         <button id="journal-close" class="minigame-btn secondary">Close</button>
@@ -282,6 +313,7 @@
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal hidden">
       <div class="modal-content settings-content">
+        <button class="modal-close-x" id="settings-exit-btn" aria-label="Close">×</button>
         <h2>⚙️ Settings</h2>
         <div class="settings-row">
           <label>Sound Effects</label>

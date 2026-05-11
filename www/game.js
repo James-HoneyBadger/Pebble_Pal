@@ -48,6 +48,18 @@
     particlesOn: true,
     // Evolution
     evolutionStage: 0,
+    // Tutorial / onboarding
+    tutorialSeen: false,
+    // Daily challenges
+    dailyChallenges: [],
+    challengeLastRefresh: null,
+    challengesCompleted: 0,
+    // Extra tracking
+    highestSkipCount: 0,
+    highestStackCount: 0,
+    totalRockStacks: 0,
+    // Seasonal
+    seasonalEventSeen: {},
   };
 
   // ── DOM ────────────────────────────────────────────────────
@@ -96,6 +108,15 @@
     quakeResult: $("#quake-result"), quakeOutcome: $("#quake-outcome"),
     quakeAgain: $("#quake-again"), quakeClose: $("#quake-close"),
     quakeRockIcon: $("#quake-rock-icon"),
+    // Rock Stack
+    stackModal: $("#rockstack-modal"), stackTap: $("#stack-tap"),
+    stackStatus: $("#stack-status"), stackCount: $("#stack-count"),
+    stackLives: $("#stack-lives"), stackResult: $("#stack-result"),
+    stackOutcome: $("#stack-outcome"), stackAgain: $("#stack-again"),
+    stackClose: $("#stack-close"), stackCursor: $("#stack-cursor"),
+    stackTarget: $("#stack-target"),
+    // Daily challenges
+    challengeList: $("#challenge-list"),
     // Journal
     journalModal: $("#journal-modal"), journalEntries: $("#journal-entries"),
     journalClose: $("#journal-close"),
@@ -110,6 +131,7 @@
     // Game picker
     gamePicker: $("#game-picker"), rpsGame: $("#rps-game"),
     minigameBack: $("#minigame-back"), minigameRockName: $("#minigame-rock-name"),
+    minigameTitle: $("#minigame-title"), minigameDesc: $("#minigame-desc"),
     evolutionBadge: $("#evolution-badge"),
   };
 
@@ -130,6 +152,11 @@
     crystal:  { label: "Crystal",       color: "#8ec8e8", hi: "#c0e8ff", sh: "#5a9aba", unlock: { level: 18 } },
     void:     { label: "Void Stone",    color: "#1a0a2e", hi: "#3a1a5e", sh: "#0a0018", unlock: { level: 22 } },
     rainbow:  { label: "Rainbow",       color: "#ff6b6b", hi: "#ffd93d", sh: "#6bcb77", unlock: { level: 25 } },
+    aurora:   { label: "Aurora",        color: "#7fb3d3", hi: "#a8d8ea", sh: "#4a7fa0", unlock: { level: 30 } },
+    nebula:   { label: "Nebula",        color: "#6d4b8e", hi: "#9b59b6", sh: "#4a2d6e", unlock: { level: 35 } },
+    ancient:  { label: "Ancient Stone", color: "#a08060", hi: "#c8a882", sh: "#7a5a45", unlock: { level: 40 } },
+    prism:    { label: "Prism",         color: "#5bc8af", hi: "#7fdbca", sh: "#3a9a85", unlock: { level: 45 } },
+    galaxy:   { label: "Galaxy Stone",  color: "#1e1e3f", hi: "#6c6cff", sh: "#0a0a2a", unlock: { level: 50 } },
   };
 
   // ── Data: Eye Styles ───────────────────────────────────────
@@ -140,6 +167,9 @@
     sleepy:  { label: "Sleepy",   css: "eyes-sleepy",  unlock: { level: 6 } },
     cyclops: { label: "Cyclops",  css: "eyes-cyclops", unlock: { level: 9 } },
     star:    { label: "Star",     css: "eyes-star",    unlock: { level: 12 } },
+    heart:   { label: "Heart",    css: "eyes-heart",   unlock: { level: 15 } },
+    sparkle: { label: "Sparkle",  css: "eyes-sparkle", unlock: { level: 20 } },
+    diamond: { label: "Diamond",  css: "eyes-diamond", unlock: { level: 25 } },
   };
 
   // ── Data: Accessories (SVG) ────────────────────────────────
@@ -171,6 +201,16 @@
       svg: `<svg viewBox="0 0 100 50" width="100" height="50"><path d="M 15 40 Q 15 10 50 10 Q 85 10 85 40" fill="none" stroke="#444" stroke-width="5" stroke-linecap="round"/><rect x="5" y="32" width="16" height="20" rx="5" fill="#333" stroke="#555" stroke-width="1.5"/><rect x="79" y="32" width="16" height="20" rx="5" fill="#333" stroke="#555" stroke-width="1.5"/><rect x="7" y="35" width="12" height="6" rx="2" fill="#e94560"/><rect x="81" y="35" width="12" height="6" rx="2" fill="#e94560"/></svg>` },
     wizard: { label: "Wizard Hat", target: "head", unlock: { level: 20 },
       svg: `<svg viewBox="0 0 80 80" width="80" height="80"><polygon points="40,2 65,70 15,70" fill="#2a1a5e" stroke="#4a2a8e" stroke-width="1.5"/><rect x="8" y="66" width="64" height="10" rx="5" fill="#2a1a5e" stroke="#4a2a8e" stroke-width="1.5"/><circle cx="42" cy="15" r="4" fill="#ffd93d"/><circle cx="30" cy="35" r="3" fill="#ffd93d" opacity=".7"/><circle cx="48" cy="50" r="2.5" fill="#ffd93d" opacity=".5"/></svg>` },
+    butterfly: { label: "Butterfly", target: "head", unlock: { level: 25 },
+      svg: `<svg viewBox="0 0 80 55" width="80" height="55"><ellipse cx="20" cy="22" rx="18" ry="11" fill="#ff9de2" stroke="#d47eba" stroke-width="1"/><ellipse cx="60" cy="22" rx="18" ry="11" fill="#ff9de2" stroke="#d47eba" stroke-width="1"/><ellipse cx="18" cy="32" rx="10" ry="7" fill="#ffc4f0" opacity=".8"/><ellipse cx="62" cy="32" rx="10" ry="7" fill="#ffc4f0" opacity=".8"/><ellipse cx="40" cy="24" rx="4" ry="15" fill="#444"/><line x1="37" y1="10" x2="28" y2="2" stroke="#666" stroke-width="1.5" stroke-linecap="round"/><line x1="43" y1="10" x2="52" y2="2" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg>` },
+    scarf: { label: "Scarf", target: "head", unlock: { level: 28 },
+      svg: `<svg viewBox="0 0 110 28" width="110" height="28"><path d="M8 14 Q30 4 55 14 Q80 4 102 14 Q80 24 55 14 Q30 24 8 14Z" fill="#e94560" stroke="#c03050" stroke-width="1"/><rect x="38" y="3" width="8" height="24" rx="3" fill="#e94560" stroke="#c03050" stroke-width="1"/><line x1="10" y1="14" x2="100" y2="14" stroke="rgba(255,255,255,.2)" stroke-width="1.5" stroke-dasharray="6 4"/></svg>` },
+    pirate: { label: "Pirate Hat", target: "head", unlock: { level: 32 },
+      svg: `<svg viewBox="0 0 80 65" width="80" height="65"><rect x="6" y="44" width="68" height="10" rx="5" fill="#111" stroke="#333" stroke-width="1.5"/><polygon points="40,2 68,46 12,46" fill="#111" stroke="#333" stroke-width="1.5"/><rect x="18" y="42" width="44" height="6" rx="2" fill="#e8d060"/><circle cx="40" cy="30" r="8" fill="white" opacity=".9"/><line x1="34" y1="24" x2="46" y2="36" stroke="#333" stroke-width="2" stroke-linecap="round"/><line x1="46" y1="24" x2="34" y2="36" stroke="#333" stroke-width="2" stroke-linecap="round"/></svg>` },
+    helmet: { label: "Space Helmet", target: "head", unlock: { level: 38 },
+      svg: `<svg viewBox="0 0 90 80" width="90" height="80"><ellipse cx="45" cy="42" rx="38" ry="38" fill="rgba(120,200,255,.15)" stroke="#8ac" stroke-width="3"/><ellipse cx="38" cy="34" rx="16" ry="12" fill="rgba(150,220,255,.45)" stroke="#6af" stroke-width="1.5"/><rect x="16" y="72" width="58" height="8" rx="4" fill="#888" stroke="#aaa" stroke-width="1.5"/><circle cx="68" cy="30" r="5" fill="#e94560" opacity=".8"/></svg>` },
+    bowtie: { label: "Bowtie", target: "face", unlock: { level: 42 },
+      svg: `<svg viewBox="0 0 52 26" width="52" height="26"><polygon points="5,2 25,13 5,24" fill="#e94560" stroke="#c03050" stroke-width="1.5"/><polygon points="47,2 27,13 47,24" fill="#e94560" stroke="#c03050" stroke-width="1.5"/><circle cx="26" cy="13" r="5" fill="#ffd93d" stroke="#d4a017" stroke-width="1.5"/></svg>` },
   };
 
   // ── Data: Backgrounds ──────────────────────────────────────
@@ -182,7 +222,12 @@
     underwater: { label: "Underwater", css: "env-underwater", unlock: { level: 11 } },
     cozy:       { label: "Cozy Room", css: "env-cozy", unlock: { level: 14 } },
     volcano:    { label: "Volcano", css: "env-volcano", unlock: { level: 18 } },
-    snow:       { label: "Snowfield", css: "env-snow", unlock: { level: 22 } },
+    snow:       { label: "Snowfield",   css: "env-snow",    unlock: { level: 22 } },
+    arctic:     { label: "Arctic Tundra", css: "env-arctic", unlock: { level: 28 } },
+    jungle:     { label: "Jungle",       css: "env-jungle",  unlock: { level: 33 } },
+    castle:     { label: "Castle",       css: "env-castle",  unlock: { level: 38 } },
+    nebula_bg:  { label: "Nebula",       css: "env-nebula",  unlock: { level: 43 } },
+    dream:      { label: "Dream World",  css: "env-dream",   unlock: { level: 48 } },
   };
 
   // ── Data: Foods ────────────────────────────────────────────
@@ -194,7 +239,11 @@
     geode:      { label: "🔮 Geode Slice",    fullness: 10, happiness: 15, energy: 10, msg: "Ooh a geode! So sparkly inside!" },
     lava_cake:  { label: "🍰 Lava Cake",      fullness: 20, happiness: 20, energy: 5,  msg: "Lava cake?! Best. Day. Ever!", unlock: { level: 6 } },
     diamond:    { label: "💠 Diamond Dust",   fullness: 8,  happiness: 25, energy: 15, msg: "Diamond dust! I feel EXPENSIVE!", unlock: { level: 12 } },
-    stardust:   { label: "⭐ Stardust",       fullness: 15, happiness: 30, energy: 20, msg: "Stardust... I can taste the cosmos!", unlock: { level: 18 } },
+    stardust:    { label: "⭐ Stardust",        fullness: 15, happiness: 30, energy: 20, msg: "Stardust... I can taste the cosmos!",     unlock: { level: 18 } },
+    crystal_shard:{ label: "🔮 Crystal Shard",  fullness: 20, happiness: 38, energy: 28, msg: "Ooh! I can taste the power of crystals!",   unlock: { level: 25 } },
+    moonstone:   { label: "🌙 Moonstone",       fullness: 25, happiness: 44, energy: 32, msg: "Moonstone! I feel beautifully lunar!",       unlock: { level: 32 } },
+    comet:       { label: "☄️ Comet Crumble",   fullness: 30, happiness: 48, energy: 38, msg: "COMET CRUMBLE! I'm basically a shooting star!", unlock: { level: 40 } },
+    void_cookie: { label: "🌌 Void Cookie",     fullness: 35, happiness: 55, energy: 45, msg: "The void... it's delicious?! I transcend!",  unlock: { level: 48 } },
   };
 
   // ── Data: Stickers ─────────────────────────────────────────
@@ -214,6 +263,12 @@
     { id: "s_evolution3", icon: "💎",  name: "Crystal Form", desc: "Rock reached crystal form",how: "Reach level 30" },
     { id: "s_journal5",   icon: "📖",  name: "Storyteller",  desc: "Rock has 5 journal entries",how: "5 journal entries" },
     { id: "s_card",       icon: "📸",  name: "Famous Rock",  desc: "Exported a rock card",    how: "Export Card" },
+    { id: "s_rockstack",  icon: "🗼",  name: "Rock Stacker",  desc: "Stack rocks successfully",  how: "Rock Stack game" },
+    { id: "s_challenge",  icon: "📋",  name: "Challenger",    desc: "Complete a daily challenge",how: "Daily challenge" },
+    { id: "s_challenge7", icon: "🌟",  name: "Challenge Champ",desc: "Complete 7 challenges",    how: "7 challenges total" },
+    { id: "s_seasonal",   icon: "🎃",  name: "Season Lover",  desc: "Saw a seasonal event",      how: "Seasonal event" },
+    { id: "s_level30",    icon: "💎",  name: "Diamond Rock",  desc: "Reached level 30",          how: "Level 30" },
+    { id: "s_level50",    icon: "🌌",  name: "Galaxy Brain",  desc: "Reached level 50",          how: "Level 50" },
   ];
 
   // ── Data: Daily Events ─────────────────────────────────────
@@ -227,7 +282,11 @@
     { id: "cave",      icon: "🦇", name: "Cave Discovery",    desc: "Found a cool cave nearby!",         effects: { happiness: 10, energy: 15 },        sticker: null },
     { id: "earthquake_minor", icon: "📳", name: "Tiny Tremor", desc: "Just a little shake! -energy",    effects: { energy: -10, happiness: -5 },       sticker: null },
     { id: "gem_found", icon: "💎", name: "Found a Gem!",      desc: "A shiny gem was nearby!",           effects: { happiness: 20, fullness: 5 }, xp: 15, sticker: null },
-    { id: "friend",    icon: "🪨", name: "Rocky's Friend",    desc: "Another rock visited!",             effects: { happiness: 15, bond: 8 },           sticker: null },
+    { id: "friend",    icon: "🪨", name: "Rocky's Friend",   desc: "Another rock visited!",              effects: { happiness: 15, bond: 8 },            sticker: null },
+    { id: "fossil",    icon: "🦴", name: "Fossil Found!",    desc: "A fossil was unearthed nearby!",      effects: { happiness: 18 }, xp: 12,               sticker: null },
+    { id: "crystal_v", icon: "🔮", name: "Crystal Vein",    desc: "Found a crystal vein!",               effects: { energy: 20, happiness: 12 }, xp: 8,     sticker: null },
+    { id: "rainbow_d", icon: "🌈", name: "Rainbow Day",     desc: "A beautiful rainbow appeared!",       effects: { happiness: 22, bond: 6 }, xp: 8,        sticker: null },
+    { id: "eclipse",   icon: "🌑", name: "Solar Eclipse!",  desc: "Darkness fell and passed!",           effects: { happiness: 10, energy: -8 }, xp: 15,    sticker: null },
   ];
 
   // ── Data: Evolution Stages ─────────────────────────────────
@@ -238,7 +297,8 @@
     { level: 30, name: "Crystal Formation", size: [160, 155], radius: "38% 62% 45% 55%/42% 55% 45% 58%" },
   ];
 
-  // ── Data: Achievements ─────────────────────────────────────  const ACHIEVEMENTS = [
+  // ── Data: Achievements ─────────────────────────────────────
+  const ACHIEVEMENTS = [
     { id: "first_feed",    icon: "🍪", name: "First Bite",        desc: "Feed for the first time",        check: () => state.totalFeeds >= 1 },
     { id: "feed_10",       icon: "🪨", name: "Mineral Lover",     desc: "Feed 10 times",                  check: () => state.totalFeeds >= 10 },
     { id: "feed_50",       icon: "⛏️", name: "Quarry Chef",       desc: "Feed 50 times",                  check: () => state.totalFeeds >= 50 },
@@ -264,6 +324,18 @@
     { id: "evolution_1",   icon: "⬆️", name: "Growing Up",        desc: "Rock evolved for the first time",check: () => state.evolutionStage >= 1 },
     { id: "stickers_5",    icon: "🌟", name: "Collector",         desc: "Collect 5 stickers",             check: () => state.stickersCollected.length >= 5 },
     { id: "journal_5",     icon: "📖", name: "Memoirs",           desc: "Rock has 5 journal entries",     check: () => state.journalEntries.length >= 5 },
+    { id: "level_30",      icon: "💎", name: "Diamond Tier",      desc: "Reach level 30",                check: () => state.level >= 30 },
+    { id: "level_50",      icon: "🌌", name: "Galaxy Tier",       desc: "Reach level 50",                check: () => state.level >= 50 },
+    { id: "feed_100",      icon: "🍽️", name: "Master Chef",       desc: "Feed 100 times",                check: () => state.totalFeeds >= 100 },
+    { id: "pet_100",       icon: "💖", name: "Rock Whisperer",    desc: "Pet 100 times",                 check: () => state.totalPets >= 100 },
+    { id: "play_50",       icon: "🎮", name: "Game Master",       desc: "Play 50 mini-games",            check: () => state.totalPlays >= 50 },
+    { id: "walk_50",       icon: "🌍", name: "World Walker",      desc: "Walk 50 times",                 check: () => state.totalWalks >= 50 },
+    { id: "interactions_500", icon: "🌟", name: "Superfan",       desc: "500 total interactions",        check: () => state.totalInteractions >= 500 },
+    { id: "age_100",       icon: "🎊", name: "Centenarian",       desc: "Rock is 100 days old",          check: () => state.age >= 100 },
+    { id: "challenge_7",   icon: "📋", name: "Challenge Fanatic", desc: "Complete 7 daily challenges",   check: () => (state.challengesCompleted || 0) >= 7 },
+    { id: "rock_stack",    icon: "🗼", name: "Rock Stacker",      desc: "Play the Rock Stack game",      check: () => (state.totalRockStacks || 0) >= 1 },
+    { id: "all_skins",     icon: "🎨", name: "Fashionista",       desc: "Unlock 8+ skins",               check: () => state.skinsUnlocked.length >= 8 },
+    { id: "streak_14",     icon: "🏆", name: "2-Week Warrior",    desc: "14-day visit streak",           check: () => state.streak >= 14 },
   ];
 
   // ── Data: Dialogue ─────────────────────────────────────────
@@ -390,6 +462,9 @@
     dom.levelupNumber.textContent = `Level ${state.level}`;
     dom.levelupOverlay.classList.remove("hidden");
     setTimeout(() => dom.levelupOverlay.classList.add("hidden"), 2200);
+    flashScreen("rgba(255,215,0,0.28)");
+    spawnBurst(["⭐","✨","🌟","💫"], 14);
+    animateRock("anim-celebrate", 750);
   }
 
   function grantCustomizeXP() {
@@ -438,6 +513,8 @@
         log(`🏆 Achievement: ${ach.name} — ${ach.desc}`, "achieve-msg");
         showAchievementToast(ach);
         SFX.achieve();
+        flashScreen("rgba(255,200,50,0.28)");
+        spawnBurst(["🏆","⭐","✨"], 8);
         addXP(15);
       }
     }
@@ -516,8 +593,13 @@
     document.documentElement.style.setProperty("--rock-color", s.color);
     document.documentElement.style.setProperty("--rock-highlight", s.hi);
     document.documentElement.style.setProperty("--rock-shadow", s.sh);
-    // Refresh the gradient
-    dom.rockBody.style.background = `radial-gradient(ellipse at 35% 30%, ${s.hi}, ${s.color} 50%, ${s.sh})`;
+    if (state.skin === "rainbow") {
+      dom.rockBody.style.background = "";
+      dom.rockBody.classList.add("rainbow-skin");
+    } else {
+      dom.rockBody.classList.remove("rainbow-skin");
+      dom.rockBody.style.background = `radial-gradient(ellipse at 35% 30%, ${s.hi}, ${s.color} 50%, ${s.sh})`;
+    }
   }
 
   function updateAccessory() {
@@ -721,13 +803,51 @@
     if (!state.particlesOn) return;
     const el = document.createElement("div");
     el.className = "particle"; el.textContent = emoji;
+    const dx = (Math.random() - 0.5) * 60;
+    el.style.setProperty("--dx", dx + "px");
+    el.style.fontSize = (0.8 + Math.random() * 0.8).toFixed(1) + "rem";
     el.style.left = (x || 80 + Math.random() * 40) + "px";
     el.style.top = (y || 60 + Math.random() * 40) + "px";
     dom.particles.appendChild(el);
-    setTimeout(() => el.remove(), 1500);
+    setTimeout(() => el.remove(), 1600);
   }
   function spawnMulti(emoji, n = 5) {
-    for (let i = 0; i < n; i++) setTimeout(() => spawnParticle(emoji), i * 150);
+    for (let i = 0; i < n; i++) setTimeout(() => spawnParticle(emoji), i * 130);
+  }
+  function spawnBurst(emojis, count, cx, cy) {
+    if (!state.particlesOn) return;
+    const arr = Array.isArray(emojis) ? emojis : [emojis];
+    const ox = cx != null ? cx : window.innerWidth / 2;
+    const oy = cy != null ? cy : 200;
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement("div");
+      el.className = "burst-particle";
+      el.textContent = arr[Math.floor(Math.random() * arr.length)];
+      const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.8;
+      const dist = 55 + Math.random() * 95;
+      el.style.setProperty("--bx", Math.round(Math.cos(angle) * dist) + "px");
+      el.style.setProperty("--by", Math.round(Math.sin(angle) * dist) + "px");
+      el.style.setProperty("--brot", Math.round((Math.random() - 0.5) * 720) + "deg");
+      el.style.setProperty("--dur", (0.8 + Math.random() * 0.5).toFixed(2) + "s");
+      el.style.left = ox + "px";
+      el.style.top = oy + "px";
+      el.style.fontSize = (0.9 + Math.random() * 0.7).toFixed(1) + "rem";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1500);
+    }
+  }
+  function flashScreen(color = "rgba(255,215,0,0.35)") {
+    const el = document.createElement("div");
+    el.className = "screen-flash";
+    el.style.background = color;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 750);
+  }
+  function spawnRipple() {
+    const el = document.createElement("div");
+    el.className = "rock-ripple";
+    dom.rock.appendChild(el);
+    setTimeout(() => el.remove(), 600);
   }
 
   function showStatFloater(text, color = "#6bcb77") {
@@ -735,10 +855,11 @@
     el.className = "stat-floater";
     el.textContent = text;
     el.style.color = color;
+    el.style.setProperty("--fdx", ((Math.random() - 0.5) * 32).toFixed(0) + "px");
     el.style.left = (70 + Math.random() * 60) + "px";
     el.style.top = (30 + Math.random() * 40) + "px";
     dom.particles.appendChild(el);
-    setTimeout(() => el.remove(), 1200);
+    setTimeout(() => el.remove(), 1400);
   }
 
   let sleepInterval = null;
@@ -778,12 +899,29 @@
     return audioCtx;
   }
 
-  // Haptic feedback via Web Vibration API (works on Android; silently ignored on iOS)
-  function haptic(pattern = 20) {
-    try { if (navigator.vibrate) navigator.vibrate(pattern); } catch(e) {}
+  // Haptic feedback — Capacitor Haptics on iOS, Web Vibration on Android
+  function haptic(intensity = "light") {
+    try {
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
+        const H = window.Capacitor.Plugins.Haptics;
+        if (intensity === "heavy")   H.impact({ style: "HEAVY" }).catch(() => {});
+        else if (intensity === "medium") H.impact({ style: "MEDIUM" }).catch(() => {});
+        else if (intensity === "success") H.notification({ type: "SUCCESS" }).catch(() => {});
+        else if (intensity === "warning") H.notification({ type: "WARNING" }).catch(() => {});
+        else H.impact({ style: "LIGHT" }).catch(() => {});
+        return;
+      }
+    } catch(e) {}
+    // Fallback: Web Vibration API (Android / desktop)
+    try {
+      if (navigator.vibrate) {
+        const patterns = { light: 10, medium: 20, heavy: [30, 50, 30], success: [10, 50, 20], warning: [20, 30, 20] };
+        navigator.vibrate(patterns[intensity] || 10);
+      }
+    } catch(e) {}
   }
 
-  function playTone(freq, type = "sine", duration = 0.15, gain = 0.2) {
+  function playTone(freq, type = "sine", duration = 0.15, gain = 0.2, attack = 0.008) {
     if (!state.sfxOn) return;
     const ctx = getAudioCtx();
     if (!ctx) return;
@@ -792,40 +930,72 @@
       const g = ctx.createGain();
       osc.connect(g); g.connect(ctx.destination);
       osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      g.gain.setValueAtTime(gain, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-      osc.start(); osc.stop(ctx.currentTime + duration);
+      g.gain.setValueAtTime(0, ctx.currentTime);
+      g.gain.linearRampToValueAtTime(gain, ctx.currentTime + attack);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + Math.max(duration, attack + 0.02));
+      osc.start(); osc.stop(ctx.currentTime + Math.max(duration, attack + 0.02) + 0.01);
     } catch(e) {}
+  }
+  function playChord(freqs, type = "sine", duration = 0.2, gain = 0.12, attack = 0.008) {
+    freqs.forEach(f => playTone(f, type, duration, gain, attack));
   }
 
   const SFX = {
-    feed:    () => { haptic(15); playTone(440, "sine", 0.1); setTimeout(() => playTone(550, "sine", 0.1), 80); },
-    pet:     () => { haptic([10, 30, 10]); playTone(660, "sine", 0.15); setTimeout(() => playTone(880, "sine", 0.1), 100); },
-    clean:   () => { haptic(30); [400,500,600,700].forEach((f,i) => setTimeout(() => playTone(f,"triangle",0.08), i*60)); },
-    levelup: () => { haptic([50, 50, 50, 50, 100]); [523,659,784,1047].forEach((f,i) => setTimeout(() => playTone(f,"square",0.12,0.15), i*100)); },
-    achieve: () => { haptic([30, 30, 80]); [784,1047].forEach((f,i) => setTimeout(() => playTone(f,"sine",0.15), i*120)); },
-    click:   () => { haptic(10); playTone(300, "sine", 0.05, 0.1); },
-    win:     () => { haptic([20, 20, 20, 20, 60]); [523,659,784,1047,1319].forEach((f,i) => setTimeout(() => playTone(f,"sine",0.12), i*80)); },
-    lose:    () => { haptic([40, 20, 40]); [400,350,300].forEach((f,i) => setTimeout(() => playTone(f,"sawtooth",0.1), i*100)); },
-    tap:     () => { haptic(8); playTone(800, "square", 0.04, 0.15); },
-    event:   () => { haptic(25); playTone(550, "sine", 0.1); setTimeout(() => playTone(700, "sine", 0.1), 100); },
+    feed:     () => { haptic("light");   playTone(440,"sine",0.1,0.18,0.01); setTimeout(()=>playChord([550,660],"sine",0.12,0.12),90); },
+    pet:      () => { haptic("medium");  [523,659,784].forEach((f,i)=>setTimeout(()=>playTone(f,"sine",0.18,0.18,0.01),i*65)); },
+    clean:    () => { haptic("medium");  [350,450,580,720,900].forEach((f,i)=>setTimeout(()=>playTone(f,"triangle",0.09,0.15,0.005),i*55)); },
+    levelup:  () => { haptic("success"); playChord([523,659,784],"square",0.1,0.1,0.01); setTimeout(()=>playChord([659,784,1047],"square",0.12,0.13,0.01),160); setTimeout(()=>playChord([784,1047,1319],"sine",0.22,0.16,0.01),320); },
+    achieve:  () => { haptic("success"); playChord([784,988,1175],"sine",0.14,0.14,0.008); setTimeout(()=>playChord([988,1319,1568],"sine",0.18,0.14,0.005),180); },
+    click:    () => { haptic("light");   playTone(380,"sine",0.04,0.08,0.003); },
+    win:      () => { haptic("success"); playChord([523,659,784],"sine",0.1,0.13,0.01); setTimeout(()=>playChord([659,784,1047],"sine",0.13,0.14,0.008),130); setTimeout(()=>playChord([784,1047,1319],"sine",0.28,0.16,0.006),260); },
+    lose:     () => { haptic("warning"); [400,340,270,210].forEach((f,i)=>setTimeout(()=>playTone(f,"sawtooth",0.14,0.15,0.012),i*110)); },
+    tap:      () => { haptic("light");   playTone(800,"square",0.04,0.15,0.003); },
+    tapHit:   () => { haptic("light");   playTone(900,"sine",0.06,0.22,0.003); setTimeout(()=>playTone(1200,"sine",0.05,0.12,0.002),55); },
+    tapMiss:  () => { haptic("light");   playTone(200,"sawtooth",0.08,0.14,0.008); setTimeout(()=>playTone(160,"sawtooth",0.06,0.10,0.005),80); },
+    event:    () => { haptic("medium");  playChord([440,550],"sine",0.12,0.14,0.01); setTimeout(()=>playTone(660,"sine",0.14,0.16,0.008),140); },
+    stack:    () => { haptic("medium");  playTone(620,"sine",0.06,0.18,0.005); setTimeout(()=>playTone(820,"sine",0.09,0.15,0.005),70); },
+    evolution:() => { haptic("heavy");   [261,329,392,523,659,784,1047].forEach((f,i)=>setTimeout(()=>playChord([f,Math.round(f*1.26)],"sine",0.22,0.18,0.015),i*90)); },
+    challenge:() => { haptic("success"); playChord([523,659],"triangle",0.1,0.13,0.01); setTimeout(()=>playChord([659,784,1047],"triangle",0.16,0.14,0.008),140); },
   };
 
-  let ambientNode = null, ambientGain = null;
+  let ambientNode = null, ambientGain = null, _ambientNodes = [];
   function startAmbient() {
     if (!state.ambientOn) return;
     const ctx = getAudioCtx(); if (!ctx) return;
     try {
       stopAmbient();
-      ambientGain = ctx.createGain(); ambientGain.gain.setValueAtTime(0.04, ctx.currentTime);
-      ambientNode = ctx.createOscillator();
-      ambientNode.type = "sine"; ambientNode.frequency.setValueAtTime(80, ctx.currentTime);
-      ambientNode.connect(ambientGain); ambientGain.connect(ctx.destination);
-      ambientNode.start();
+      _ambientNodes = [];
+      // Master output gain
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0.055, ctx.currentTime);
+      masterGain.connect(ctx.destination);
+      ambientGain = masterGain;
+      // Low rumble oscillator with slow LFO frequency tremolo
+      const rumble = ctx.createOscillator();
+      rumble.type = "sine"; rumble.frequency.setValueAtTime(55, ctx.currentTime);
+      const lfo = ctx.createOscillator(); const lfoGain = ctx.createGain();
+      lfo.frequency.setValueAtTime(0.22, ctx.currentTime);
+      lfoGain.gain.setValueAtTime(7, ctx.currentTime);
+      lfo.connect(lfoGain); lfoGain.connect(rumble.frequency);
+      lfo.start(); rumble.connect(masterGain); rumble.start();
+      _ambientNodes.push(rumble, lfo);
+      ambientNode = rumble;
+      // Gentle bandpass-filtered noise layer for texture
+      const bufLen = ctx.sampleRate * 2;
+      const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1);
+      const noise = ctx.createBufferSource(); noise.buffer = buf; noise.loop = true;
+      const noiseGain = ctx.createGain(); noiseGain.gain.setValueAtTime(0.01, ctx.currentTime);
+      const filter = ctx.createBiquadFilter(); filter.type = "bandpass";
+      filter.frequency.setValueAtTime(250, ctx.currentTime); filter.Q.setValueAtTime(0.4, ctx.currentTime);
+      noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(masterGain);
+      noise.start(); _ambientNodes.push(noise);
     } catch(e) {}
   }
   function stopAmbient() {
-    try { if (ambientNode) { ambientNode.stop(); ambientNode = null; } } catch(e) {}
+    _ambientNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+    _ambientNodes = []; ambientNode = null;
   }
 
   // ── Evolution ──────────────────────────────────────────────
@@ -843,7 +1013,9 @@
         log(`✨ ${state.name} evolved into a ${evo.name}!`, "xp-msg");
         showThought(`I'm a ${evo.name} now! I feel... rockier!`, 5000);
         spawnMulti("⭐", 8);
-        SFX.levelup();
+        spawnBurst(["✨","⭐","💫","🌈","🎆"], 20);
+        flashScreen("rgba(140,80,255,0.35)");
+        SFX.evolution();
         addJournalEntry(`Evolved into a ${evo.name}!`);
         grantSticker(stage === 1 ? "s_evolution1" : stage === 2 ? "s_evolution2" : "s_evolution3");
         checkAchievements();
@@ -1014,7 +1186,7 @@
   }
 
   // ── Mini-game: Stone Skip ──────────────────────────────────
-  let skipActive = false, skipCount = 0, skipCursorAnim = null, skipTapWindow = false;
+  let skipActive = false, skipCount = 0, skipCursorAnim = null, skipTapWindow = false, skipEndTimeout = null;
   function openStoneSkip() {
     skipActive = false; skipCount = 0;
     dom.stoneskipCount.textContent = "0";
@@ -1041,13 +1213,16 @@
       const zoneStart = laneWidth * 0.35, zoneEnd = laneWidth * 0.65;
       skipTapWindow = pos >= zoneStart && pos <= zoneEnd;
       dom.stoneskipTarget.style.opacity = skipTapWindow ? "1" : "0.4";
+      dom.stoneskipTarget.classList.toggle("lit", skipTapWindow);
     }, 16);
-    // Auto-end after 8 seconds
-    setTimeout(() => endSkipGame(), 8000);
+    // Auto-end after 8 seconds (cancel any stale timer from Play Again)
+    if (skipEndTimeout) clearTimeout(skipEndTimeout);
+    skipEndTimeout = setTimeout(() => endSkipGame(), 8000);
   }
 
   function endSkipGame() {
     skipActive = false;
+    if (skipEndTimeout) { clearTimeout(skipEndTimeout); skipEndTimeout = null; }
     if (skipCursorAnim) { clearInterval(skipCursorAnim); skipCursorAnim = null; }
     dom.stoneskipTap.disabled = true;
     dom.stoneskipTap.classList.add("hidden");
@@ -1057,21 +1232,27 @@
     addXP(xpGain);
     state.stats.happiness = clamp(state.stats.happiness + skipCount * 3);
     state.stats.bond = clamp(state.stats.bond + skipCount);
+    const isNewSkipBest = skipCount > 0 && skipCount > (state.highestSkipCount || 0);
+    if (isNewSkipBest) state.highestSkipCount = skipCount;
+    const skipBestTag = state.highestSkipCount > 0
+      ? (isNewSkipBest ? " 🏅 New best!" : ` (best: ${state.highestSkipCount})`)
+      : "";
     dom.stoneskipOutcome.textContent = skipCount >= 10
-      ? `Amazing! ${skipCount} skips! ${state.name} is thrilled!`
+      ? `Amazing! ${skipCount} skips! ${state.name} is thrilled!${skipBestTag}`
       : skipCount >= 5
-        ? `Nice! ${skipCount} skips! Well done!`
-        : `${skipCount} skips. Keep practicing!`;
+        ? `Nice! ${skipCount} skips! Well done!${skipBestTag}`
+        : `${skipCount} skips. Keep practicing!${skipBestTag}`;
     dom.stoneskipStatus.textContent = "Done!";
     if (skipCount >= 5) grantSticker("s_skip_5");
     if (skipCount >= 10) grantSticker("s_skip_10");
     log(`Stone Skip: ${skipCount} skips! +${xpGain} XP`, "action-msg");
     addJournalEntry(`Played Stone Skip — ${skipCount} skips!`);
     (skipCount >= 5 ? SFX.win : SFX.lose)();
-    updateStats(); updateFace(); checkAchievements();
+    if (skipCount >= 5) { flashScreen("rgba(107,203,119,0.28)"); spawnBurst(["💧","✨","�"], 10); }
+    updateStats(); updateFace(); checkAchievements(); checkDailyChallenges();
   }
 
-  // ── Mini-game: Gem Match ───────────────────────────────────
+  // ── Mini-game: Gem Match ───────────────────────────
   const GEM_ICONS = ["💎","🔮","💠","🔷","🟣","🟡","🟢","🔴"];
   let gemCards = [], gemFlipped = [], gemMatched = [], gemLocked = false, gemStartTime = 0;
 
@@ -1133,7 +1314,9 @@
     log(`Gem Match: all matched in ${elapsed.toFixed(1)}s! +25 XP`, "action-msg");
     addJournalEntry(`Won Gem Match in ${elapsed.toFixed(1)} seconds!`);
     SFX.win();
-    updateStats(); updateFace(); checkAchievements();
+    flashScreen("rgba(100,150,255,0.28)");
+    spawnBurst(["💎","✨","🔮"], 10);
+    updateStats(); updateFace(); checkAchievements(); checkDailyChallenges();
   }
 
   // ── Mini-game: Earthquake Survival ────────────────────────
@@ -1197,10 +1380,11 @@
       log("Earthquake Survival: Failed! Try again!", "warning-msg");
       SFX.lose();
     }
-    updateStats(); updateFace(); checkAchievements();
+    updateStats(); updateFace(); checkAchievements(); checkDailyChallenges();
   }
 
-  // ── Eye Tracking ───────────────────────────────────────────  function initEyeTracking() {
+  // ── Eye Tracking ───────────────────────────────────────────
+  function initEyeTracking() {
     function trackEyes(clientX, clientY) {
       if (state.isSleeping) return;
       const r = dom.rockBody.getBoundingClientRect();
@@ -1257,8 +1441,8 @@
     dom.gamePicker.classList.remove("hidden");
     dom.rpsGame.classList.add("hidden");
     dom.minigameBack.classList.add("hidden");
-    $("#minigame-title").textContent = `Play with ${state.name}!`;
-    $("#minigame-desc").textContent = "Choose a game:";
+    dom.minigameTitle.textContent = `Play with ${state.name}!`;
+    dom.minigameDesc.textContent = "Choose a game:";
   }
 
   // ── Actions ────────────────────────────────────────────────
@@ -1271,7 +1455,7 @@
     state.stats.energy = clamp(state.stats.energy + food.energy);
     state.stats.cleanliness = clamp(state.stats.cleanliness - 3);
     state.stats.bond = clamp(state.stats.bond + 2);
-    state.totalFeeds++;
+    state.totalFeeds++; state.totalInteractions++;
     animateRock("anim-jelly");
     spawnMulti("🪨", 3);
     showThought(food.msg);
@@ -1283,6 +1467,14 @@
     addXP(5 + Math.floor(food.happiness / 5));
     startCooldown();
     updateStats(); updateFace(); checkAchievements();
+    checkDailyChallenges();
+    // Track fancy-feast special challenge
+    if (food.unlock && food.unlock.level >= 25) {
+      for (const dc of state.dailyChallenges) {
+        if (dc.id === "feed_stardust" && !dc.completed) { dc.specialProgress = (dc.specialProgress || 0) + 1; }
+      }
+    }
+    checkDailyChallenges();
   }
 
   const actions = {
@@ -1298,8 +1490,8 @@
       dom.gamePicker.classList.remove("hidden");
       dom.rpsGame.classList.add("hidden");
       dom.minigameBack.classList.add("hidden");
-      $("#minigame-title").textContent = `Play with ${state.name}!`;
-      $("#minigame-desc").textContent = "Choose a game:";
+      dom.minigameTitle.textContent = `Play with ${state.name}!`;
+      dom.minigameDesc.textContent = "Choose a game:";
       dom.minigameModal.classList.remove("hidden");
       focusFirstInModal(dom.minigameModal);
     },
@@ -1314,7 +1506,7 @@
       const msg = pick(dialogue.clean); showThought(msg);
       log(`You polished ${state.name}!`, "action-msg"); log(`${state.name}: "${msg}"`, "rock-msg");
       SFX.clean();
-      addXP(4); startCooldown(2000); checkAchievements();
+      addXP(4); startCooldown(2000); checkAchievements(); checkDailyChallenges();
     },
     sleep() {
       if (state.actionCooldown) return;
@@ -1346,7 +1538,7 @@
       if (state.stats.happiness < 30) pool.push(...dialogue.sad);
       const msg = pick(pool); showThought(msg, 4000);
       log(`You chatted with ${state.name}.`, "action-msg"); log(`${state.name}: "${msg}"`, "rock-msg");
-      addXP(3); startCooldown(); checkAchievements();
+      addXP(3); startCooldown(); checkAchievements(); checkDailyChallenges();
     },
     pet() {
       if (state.isSleeping) { showThought("*happy sleeping sounds*"); state.stats.bond = clamp(state.stats.bond + 1); return; }
@@ -1358,7 +1550,7 @@
       const msg = pick(dialogue.pet); showThought(msg);
       log(`You petted ${state.name}!`, "action-msg"); log(`${state.name}: "${msg}"`, "rock-msg");
       SFX.pet();
-      addXP(4); startCooldown(800); checkAchievements();
+      addXP(4); startCooldown(800); checkAchievements(); checkDailyChallenges();
     },
     exercise() {
       if (state.isSleeping) { showThought("Zzz... carry me later..."); return; }
@@ -1374,7 +1566,7 @@
       showStatFloater("+10 😊", "#ffd93d"); showStatFloater("-12 ⚡", "#4d96ff");
       const msg = pick(dialogue.exercise); showThought(msg);
       log(`You took ${state.name} for a walk!`, "action-msg"); log(`${state.name}: "${msg}"`, "rock-msg");
-      addXP(6); startCooldown(2200); checkAchievements();
+      addXP(6); startCooldown(2200); checkAchievements(); checkDailyChallenges();
     },
     music() {
       if (state.isSleeping) { showThought("*sleepy vibing*"); return; }
@@ -1389,7 +1581,7 @@
       showStatFloater("-5 ⚡", "#4d96ff");
       const msg = pick(dialogue.music); showThought(msg);
       log(`You played tunes for ${state.name}!`, "action-msg"); log(`${state.name}: "${msg}"`, "rock-msg");
-      addXP(4); startCooldown(2500); checkAchievements();
+      addXP(4); startCooldown(2500); checkAchievements(); checkDailyChallenges();
     },
   };
 
@@ -1411,7 +1603,7 @@
       (playerChoice === "paper" && rockChoice === "rock") ||
       (playerChoice === "scissors" && rockChoice === "paper")
     ) {
-      outcome = "You win! 🎉"; state.stats.happiness = clamp(state.stats.happiness + 10); state.rpsWins++;
+      outcome = "You win! 🎉"; state.stats.happiness = clamp(state.stats.happiness + 10); state.rpsWins++; grantSticker("s_rps_win");
     } else {
       outcome = `${state.name} wins! 🪨💪`; state.stats.happiness = clamp(state.stats.happiness + 3);
     }
@@ -1420,7 +1612,7 @@
     dom.rpsOutcome.textContent = outcome;
     log(`RPS: ${outcome}`, "action-msg");
     if (rockChoice === "rock") log(`${state.name}: "I always pick rock. Obviously."`, "rock-msg");
-    addXP(6); updateStats(); updateFace(); startCooldown(); checkAchievements();
+    addXP(6); updateStats(); updateFace(); startCooldown(); checkAchievements(); checkDailyChallenges();
   }
 
   // ── Decay ──────────────────────────────────────────────────
@@ -1485,6 +1677,7 @@
     _lastRockClick = now;
     if (state.isSleeping) { showThought("*snore* ...don't wake me..."); return; }
     state.totalInteractions++;
+    spawnRipple();
     const reactions = [
       () => { animateRock("anim-bounce"); showThought("Hey! That tickles!"); },
       () => { animateRock("anim-wiggle"); showThought("Whoa!"); },
@@ -1502,7 +1695,12 @@
     $$(".action-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         const a = btn.dataset.action;
-        if (actions[a]) { actions[a](); state.totalInteractions++; updateStats(); updateFace(); }
+        if (actions[a]) {
+          actions[a]();
+          // feed opens food picker; play opens game picker — interactions counted on actual completion
+          if (a !== "feed" && a !== "play") state.totalInteractions++;
+          updateStats(); updateFace();
+        }
       });
     });
     dom.rock.addEventListener("click", onRockClick);
@@ -1549,8 +1747,8 @@
           dom.minigameBack.classList.remove("hidden");
           dom.rpsChoices.classList.remove("hidden");
           dom.rpsResult.classList.add("hidden");
-          $("#minigame-title").textContent = `Rock Paper Scissors with ${state.name}!`;
-          $("#minigame-desc").textContent = "Choose your weapon:";
+          dom.minigameTitle.textContent = `Rock Paper Scissors with ${state.name}!`;
+          dom.minigameDesc.textContent = "Choose your weapon:";
           dom.minigameModal.classList.remove("hidden");
           focusFirstInModal(dom.minigameModal);
         } else if (game === "stoneskip") {
@@ -1559,6 +1757,8 @@
           openGemMatch();
         } else if (game === "quake") {
           openQuake();
+        } else if (game === "rockstack") {
+          openRockStack();
         }
       });
     });
@@ -1571,53 +1771,114 @@
     $$(".rps-btn").forEach(btn => btn.addEventListener("click", () => playRPS(btn.dataset.choice)));
     dom.rpsAgain.addEventListener("click", () => { dom.rpsChoices.classList.remove("hidden"); dom.rpsResult.classList.add("hidden"); focusFirstInModal(dom.minigameModal); });
     dom.rpsClose.addEventListener("click", closeRPSModal);
+    $("#minigame-exit-btn").addEventListener("click", closeRPSModal);
     dom.minigameModal.addEventListener("click", (e) => { if (e.target === dom.minigameModal) closeRPSModal(); });
     dom.minigameModal.addEventListener("keydown", (e) => {
       if (e.key === "Escape") { closeRPSModal(); return; }
       if (e.key === "Tab") trapFocus(e, dom.minigameModal);
     });
 
+    // Food picker cancel
+    $("#food-cancel-btn").addEventListener("click", () => dom.foodPicker.classList.add("hidden"));
+
     // Stone Skip
     dom.stoneskipTap.addEventListener("click", () => {
       if (!skipActive) return;
-      SFX.tap();
       if (skipTapWindow) {
+        SFX.tapHit();
         skipCount++; dom.stoneskipCount.textContent = skipCount;
         dom.stoneskipStatus.textContent = `Skip! (${skipCount})`;
         dom.stoneskipCursor.style.background = "#6bcb77";
         setTimeout(() => dom.stoneskipCursor.style.background = "", 200);
       } else {
+        SFX.tapMiss();
         dom.stoneskipStatus.textContent = "Missed! Wait for the zone.";
         dom.stoneskipCursor.style.background = "#e94560";
         setTimeout(() => dom.stoneskipCursor.style.background = "", 200);
+        animateRock("anim-hit", 450);
       }
     });
     dom.stoneskipAgain.addEventListener("click", () => { dom.stoneskipResult.classList.add("hidden"); startSkipCursor(); dom.stoneskipTap.classList.remove("hidden"); dom.stoneskipTap.disabled = false; skipCount = 0; dom.stoneskipCount.textContent = "0"; });
-    dom.stoneskipClose.addEventListener("click", () => {
+    const closeStoneSkip = () => {
       skipActive = false;
+      if (skipEndTimeout) { clearTimeout(skipEndTimeout); skipEndTimeout = null; }
       if (skipCursorAnim) { clearInterval(skipCursorAnim); skipCursorAnim = null; }
       dom.stoneskipModal.classList.add("hidden");
-    });
-    dom.stoneskipModal.addEventListener("keydown", e => { if (e.key === "Escape") dom.stoneskipClose.click(); });
+    };
+    dom.stoneskipClose.addEventListener("click", closeStoneSkip);
+    $("#stoneskip-exit-btn").addEventListener("click", closeStoneSkip);
+    dom.stoneskipModal.addEventListener("click", e => { if (e.target === dom.stoneskipModal) closeStoneSkip(); });
+    dom.stoneskipModal.addEventListener("keydown", e => { if (e.key === "Escape") closeStoneSkip(); });
+
+    // Rock Stack
+    if (dom.stackTap) {
+      dom.stackTap.addEventListener("click", () => {
+        if (!stackActive) return;
+        if (stackTapWindow) {
+          SFX.tapHit();
+          stackCount++;
+          dom.stackCount.textContent = stackCount;
+          dom.stackStatus.textContent = `Stacked! (${stackCount})`;
+          dom.stackCursor.style.background = "#6bcb77";
+          setTimeout(() => dom.stackCursor.style.background = "", 200);
+          // Increase difficulty: narrow zone and speed
+          stackSpeed = Math.min(10, 3 + stackCount * 0.6);
+          stackZoneWidth = Math.max(0.12, 0.45 - stackCount * 0.03);
+        } else {
+          SFX.tapMiss();
+          stackLives--;
+          dom.stackLives.innerHTML = ["❤️","❤️","❤️"].slice(0, stackLives).join("") || "💔";
+          dom.stackStatus.textContent = `Missed! ${stackLives} life${stackLives!==1?"s":""} left`;
+          dom.stackCursor.style.background = "#e94560";
+          setTimeout(() => dom.stackCursor.style.background = "", 200);
+          animateRock("anim-hit", 450);
+          SFX.lose();
+          if (stackLives <= 0) endRockStack();
+        }
+      });
+      dom.stackAgain.addEventListener("click", () => {
+        dom.stackResult.classList.add("hidden");
+        stackCount = 0; stackLives = 3; stackSpeed = 3; stackZoneWidth = 0.45;
+        dom.stackCount.textContent = "0"; dom.stackLives.innerHTML = "❤️❤️❤️";
+        dom.stackTap.classList.remove("hidden"); dom.stackTap.disabled = false;
+        dom.stackStatus.textContent = "Tap when the arrow is in the zone!";
+        startStackCursor();
+      });
+      const closeStackModal = () => {
+        stackActive = false;
+        if (stackCursorAnim) { clearInterval(stackCursorAnim); stackCursorAnim = null; }
+        dom.stackModal.classList.add("hidden");
+      };
+      dom.stackClose.addEventListener("click", closeStackModal);
+      $("#rockstack-exit-btn").addEventListener("click", closeStackModal);
+      dom.stackModal.addEventListener("click", e => { if (e.target === dom.stackModal) closeStackModal(); });
+      dom.stackModal.addEventListener("keydown", e => { if (e.key === "Escape") closeStackModal(); });
+    }
 
     // Gem Match
     dom.gemmatchClose.addEventListener("click", () => dom.gemmatchModal.classList.add("hidden"));
+    $("#gemmatch-exit-btn").addEventListener("click", () => dom.gemmatchModal.classList.add("hidden"));
     dom.gemmatchModal.addEventListener("keydown", e => { if (e.key === "Escape") dom.gemmatchModal.classList.add("hidden"); });
     dom.gemmatchModal.addEventListener("click", e => { if (e.target === dom.gemmatchModal) dom.gemmatchModal.classList.add("hidden"); });
 
     // Quake
     dom.quakeStart.addEventListener("click", startQuake);
     dom.quakeAgain.addEventListener("click", () => { dom.quakeResult.classList.add("hidden"); dom.quakeStart.classList.remove("hidden"); dom.quakeBar.style.width = "0%"; dom.quakeStatus.textContent = "Press Start then HOLD STILL!"; });
-    dom.quakeClose.addEventListener("click", () => { clearInterval(quakeTimer); dom.quakeModal.classList.add("hidden"); });
-    dom.quakeModal.addEventListener("keydown", e => { if (e.key === "Escape") dom.quakeClose.click(); });
+    const closeQuakeModal = () => { clearInterval(quakeTimer); dom.quakeModal.classList.add("hidden"); };
+    dom.quakeClose.addEventListener("click", closeQuakeModal);
+    $("#quake-exit-btn").addEventListener("click", closeQuakeModal);
+    dom.quakeModal.addEventListener("click", e => { if (e.target === dom.quakeModal) closeQuakeModal(); });
+    dom.quakeModal.addEventListener("keydown", e => { if (e.key === "Escape") closeQuakeModal(); });
 
     // Journal
     dom.journalClose.addEventListener("click", () => dom.journalModal.classList.add("hidden"));
+    $("#journal-exit-btn").addEventListener("click", () => dom.journalModal.classList.add("hidden"));
     dom.journalModal.addEventListener("click", e => { if (e.target === dom.journalModal) dom.journalModal.classList.add("hidden"); });
     dom.journalModal.addEventListener("keydown", e => { if (e.key === "Escape") dom.journalModal.classList.add("hidden"); });
 
     // Settings
     dom.settingsClose.addEventListener("click", () => dom.settingsModal.classList.add("hidden"));
+    $("#settings-exit-btn").addEventListener("click", () => dom.settingsModal.classList.add("hidden"));
     dom.settingsModal.addEventListener("click", e => { if (e.target === dom.settingsModal) dom.settingsModal.classList.add("hidden"); });
     dom.settingsModal.addEventListener("keydown", e => { if (e.key === "Escape") dom.settingsModal.classList.add("hidden"); });
 
@@ -1625,13 +1886,24 @@
       state.sfxOn = !state.sfxOn;
       dom.toggleSfx.textContent = state.sfxOn ? "ON" : "OFF";
       dom.toggleSfx.dataset.on = state.sfxOn ? "true" : "false";
-      if (state.sfxOn) SFX.click();
+      if (state.sfxOn) {
+        if (audioCtx && audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+        SFX.click();
+      } else if (audioCtx && !state.ambientOn) {
+        audioCtx.suspend().catch(() => {});
+      }
     });
     dom.toggleAmbient.addEventListener("click", () => {
       state.ambientOn = !state.ambientOn;
       dom.toggleAmbient.textContent = state.ambientOn ? "ON" : "OFF";
       dom.toggleAmbient.dataset.on = state.ambientOn ? "true" : "false";
-      if (state.ambientOn) startAmbient(); else stopAmbient();
+      if (state.ambientOn) {
+        if (audioCtx && audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+        startAmbient();
+      } else {
+        stopAmbient();
+        if (audioCtx && !state.sfxOn) audioCtx.suspend().catch(() => {});
+      }
     });
     dom.toggleParticles.addEventListener("click", () => {
       state.particlesOn = !state.particlesOn;
@@ -1641,10 +1913,12 @@
     dom.exportCardBtn.addEventListener("click", () => { exportRockCard(); });
     dom.openJournalBtn.addEventListener("click", () => { dom.settingsModal.classList.add("hidden"); openJournal(); });
     dom.resetSaveBtn.addEventListener("click", () => {
-      if (confirm("Really reset all save data? This cannot be undone!")) {
-        localStorage.removeItem("pebblePalState2");
-        location.reload();
-      }
+      showConfirmDialog(
+        "Reset Save Data",
+        "Really reset all save data?",
+        "This cannot be undone — all progress will be lost.",
+        () => { localStorage.removeItem("pebblePalState2"); location.reload(); }
+      );
     });
   }
 
@@ -1692,6 +1966,41 @@
     } catch(e) {
       log(`Welcome! Meet ${state.name}! 🪨`, "system-msg");
     }
+  }
+
+  // ── Custom Confirm Dialog ──────────────────────────────────
+  function showConfirmDialog(title, message, detail, onConfirm) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal";
+    const content = document.createElement("div");
+    content.className = "modal-content rename-modal";
+    const heading = document.createElement("h2"); heading.textContent = title;
+    content.appendChild(heading);
+    const msg = document.createElement("p");
+    msg.style.cssText = "color:var(--text-muted);margin-bottom:8px;font-size:.9rem";
+    msg.textContent = message; content.appendChild(msg);
+    if (detail) {
+      const det = document.createElement("p");
+      det.style.cssText = "font-size:.78rem;color:var(--text-muted);opacity:.7;margin-bottom:16px";
+      det.textContent = detail; content.appendChild(det);
+    }
+    const btnRow = document.createElement("div"); btnRow.className = "rename-btn-row";
+    const cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "Cancel"; cancelBtn.className = "rename-cancel-btn";
+    const okBtn = document.createElement("button");
+    okBtn.textContent = "Confirm"; okBtn.className = "minigame-btn danger"; okBtn.style.margin = "0";
+    btnRow.appendChild(cancelBtn); btnRow.appendChild(okBtn);
+    content.appendChild(btnRow); overlay.appendChild(content);
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    okBtn.addEventListener("click", () => { close(); onConfirm(); });
+    cancelBtn.addEventListener("click", close);
+    overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+    overlay.addEventListener("keydown", e => {
+      if (e.key === "Escape") close();
+      if (e.key === "Tab") trapFocus(e, overlay);
+    });
+    requestAnimationFrame(() => cancelBtn.focus());
   }
 
   // ── Custom Rename Dialog (works on iOS/Capacitor) ──────────
@@ -1746,7 +2055,7 @@
   function initCapacitorLifecycle() {
     // Listen for Electron reset command via IPC
     if (window.pebblePal && window.pebblePal.onReset) {
-      window.pebblePal.onReset(() => { localStorage.clear(); location.reload(); });
+      window.pebblePal.onReset(() => { localStorage.removeItem("pebblePalState2"); location.reload(); });
     }
     // Save on app backgrounding (iOS)
     document.addEventListener("visibilitychange", () => {
@@ -1757,6 +2066,246 @@
     document.addEventListener("resume", () => {
       showThought("You're back!", 3000);
     });
+  }
+
+  // ── Daily Challenges ──────────────────────────────────────
+  const CHALLENGE_POOL = [
+    { id: "feed_3",    icon: "🍪", name: "Feeding Time",   desc: "Feed your rock 3 times",           type: "counter", statKey: "totalFeeds",        target: 3,  xpReward: 20 },
+    { id: "pet_5",     icon: "🤚", name: "Show Some Love", desc: "Pet your rock 5 times",            type: "counter", statKey: "totalPets",         target: 5,  xpReward: 20 },
+    { id: "play_2",    icon: "🎮", name: "Game On",        desc: "Play 2 mini-games",                type: "counter", statKey: "totalPlays",        target: 2,  xpReward: 25 },
+    { id: "talk_5",    icon: "💬", name: "Chatterbox",     desc: "Chat with your rock 5 times",      type: "counter", statKey: "totalTalks",        target: 5,  xpReward: 15 },
+    { id: "walk_2",    icon: "🏃", name: "Daily Walk",     desc: "Walk your rock twice",             type: "counter", statKey: "totalWalks",        target: 2,  xpReward: 20 },
+    { id: "clean_3",   icon: "✨", name: "Squeaky Clean",  desc: "Polish your rock 3 times",         type: "counter", statKey: "totalCleans",       target: 3,  xpReward: 20 },
+    { id: "music_3",   icon: "🎵", name: "Rock Concert",   desc: "Play music 3 times",               type: "counter", statKey: "totalMusics",       target: 3,  xpReward: 20 },
+    { id: "rps_1",     icon: "✌️", name: "RPS Victory",    desc: "Win a round of Rock Paper Scissors",type:"counter", statKey: "rpsWins",           target: 1,  xpReward: 20 },
+    { id: "bond_70",   icon: "❤️", name: "Best Buds",      desc: "Reach 70 bond today",              type: "stat",    statKey: "bond",              target: 70, xpReward: 30 },
+    { id: "happy_80",  icon: "😊", name: "Happy Rock",     desc: "Reach 80 happiness",               type: "stat",    statKey: "happiness",         target: 80, xpReward: 25 },
+    { id: "full_90",   icon: "🍔", name: "Well Fed",       desc: "Reach 90 fullness",                type: "stat",    statKey: "fullness",          target: 90, xpReward: 25 },
+    { id: "energy_90", icon: "⚡", name: "Fully Charged",  desc: "Reach 90 energy",                  type: "stat",    statKey: "energy",            target: 90, xpReward: 25 },
+    { id: "click_10",  icon: "👆", name: "Tap Happy",      desc: "Tap your rock 10 times today",     type: "counter", statKey: "totalInteractions", target: 10, xpReward: 15 },
+    { id: "interact_20",icon:"🌟", name: "Super Engaged",  desc: "20 total interactions today",      type: "counter", statKey: "totalInteractions", target: 20, xpReward: 30 },
+    { id: "feed_stardust",icon:"⭐",name:"Fancy Feast",    desc: "Feed high-level food",             type: "special", target: 1,  xpReward: 35 },
+  ];
+
+  function refreshDailyChallenges() {
+    const today = new Date().toDateString();
+    if (state.challengeLastRefresh === today) return;
+    state.challengeLastRefresh = today;
+    // Seed-based shuffle for reproducible daily set
+    const seed = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const pool = [...CHALLENGE_POOL];
+    let s = parseInt(seed) % 999983;
+    const shuffle = (arr) => {
+      for (let i = arr.length - 1; i > 0; i--) {
+        s = (s * 1664525 + 1013904223) & 0xffffffff;
+        const j = Math.abs(s) % (i + 1);
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    };
+    const chosen = shuffle(pool).slice(0, 3);
+    state.dailyChallenges = chosen.map(c => ({
+      id: c.id, startVal: c.type === "counter" ? (state[c.statKey] || 0) : 0,
+      completed: false,
+    }));
+    renderChallenges();
+    save();
+  }
+
+  function checkDailyChallenges() {
+    if (!state.dailyChallenges || !state.dailyChallenges.length) return;
+    let anyCompleted = false;
+    for (const dc of state.dailyChallenges) {
+      if (dc.completed) continue;
+      const def = CHALLENGE_POOL.find(c => c.id === dc.id);
+      if (!def) continue;
+      let progress = 0;
+      if (def.type === "counter") {
+        progress = (state[def.statKey] || 0) - dc.startVal;
+      } else if (def.type === "stat") {
+        progress = state.stats[def.statKey] || 0;
+      } else if (def.type === "special") {
+        progress = dc.specialProgress || 0;
+      }
+      if (progress >= def.target) {
+        dc.completed = true;
+        state.challengesCompleted = (state.challengesCompleted || 0) + 1;
+        anyCompleted = true;
+        addXP(def.xpReward);
+        log(`📋 Challenge complete: ${def.name}! +${def.xpReward} XP`, "achieve-msg");
+        showThought(`Challenge done: ${def.name}! 🌟`, 4000);
+        SFX.challenge();
+        flashScreen("rgba(107,203,119,0.30)");
+        spawnBurst(["📋","⭐","✨"], 10);
+        grantSticker("s_challenge");
+        if (state.challengesCompleted >= 7) grantSticker("s_challenge7");
+        checkAchievements();
+      }
+    }
+    if (anyCompleted) renderChallenges();
+  }
+
+  function renderChallenges() {
+    const el = dom.challengeList;
+    if (!el) return;
+    if (!state.dailyChallenges || !state.dailyChallenges.length) {
+      el.innerHTML = '<div class="challenge-empty">Check back tomorrow!</div>';
+      return;
+    }
+    el.innerHTML = "";
+    for (const dc of state.dailyChallenges) {
+      const def = CHALLENGE_POOL.find(c => c.id === dc.id);
+      if (!def) continue;
+      let progress = 0, maxProg = def.target;
+      if (def.type === "counter") progress = Math.min(def.target, (state[def.statKey] || 0) - dc.startVal);
+      else if (def.type === "stat") progress = Math.min(def.target, state.stats[def.statKey] || 0);
+      else if (def.type === "special") progress = Math.min(def.target, dc.specialProgress || 0);
+      const pct = Math.min(100, (progress / maxProg) * 100);
+      const div = document.createElement("div");
+      div.className = `challenge-item${dc.completed ? " done" : ""}`;
+      div.innerHTML = `<span class="challenge-icon">${def.icon}</span>
+        <div class="challenge-info">
+          <div class="challenge-name">${def.name}${dc.completed ? " ✓" : ""}</div>
+          <div class="challenge-desc">${def.desc}</div>
+          <div class="challenge-bar-wrap"><div class="challenge-bar" style="width:${pct}%"></div></div>
+          <div class="challenge-progress">${dc.completed ? "Complete!" : `${Math.floor(progress)}/${maxProg}`} · +${def.xpReward} XP</div>
+        </div>`;
+      el.appendChild(div);
+    }
+  }
+
+  // ── Seasonal Events ────────────────────────────────────────
+  function checkSeasonalEvent() {
+    const m = new Date().getMonth(); // 0=Jan, 11=Dec
+    const d = new Date().getDate();
+    const today = new Date().toDateString();
+    const events = [
+      { months: [9],  icon: "🎃", name: "Spooky Season",       desc: "Halloween vibes! Rocky's feeling spooky!", effects: { happiness: 20 }, xp: 15 },
+      { months: [11, 0], icon: "⛄", name: "Winter Festival",   desc: "Snow and magic everywhere!",              effects: { happiness: 25, energy: 10 }, xp: 20 },
+      { months: [1],  icon: "💝", name: "Love Day",             desc: "Rocky feels extra loved today!",          effects: { bond: 20, happiness: 15 }, xp: 15 },
+      { months: [3],  icon: "🌸", name: "Spring Awakening",     desc: "New growth — Rocky feels refreshed!",     effects: { happiness: 20, energy: 15 }, xp: 15 },
+      { months: [6, 7], icon: "☀️", name: "Summer Solstice",   desc: "Maximum sunlight energy!",                effects: { energy: 25, happiness: 10 }, xp: 15 },
+      { months: [8, 9, 10], icon: "🍂", name: "Autumn Drift",  desc: "Leaves fall and Rocky watches.",          effects: { happiness: 12, cleanliness: -5 }, xp: 10 },
+    ];
+    const match = events.find(e => e.months.includes(m));
+    if (!match) return;
+    const key = match.icon + new Date().toISOString().slice(0, 7); // monthly
+    if (state.seasonalEventSeen && state.seasonalEventSeen[key]) return;
+    if (!state.seasonalEventSeen) state.seasonalEventSeen = {};
+    state.seasonalEventSeen[key] = true;
+    for (const [stat, val] of Object.entries(match.effects)) {
+      if (state.stats[stat] !== undefined) state.stats[stat] = clamp(state.stats[stat] + val);
+    }
+    if (match.xp) addXP(match.xp);
+    grantSticker("s_seasonal");
+    dom.eventIcon.textContent = match.icon;
+    dom.eventDesc.textContent = match.desc;
+    dom.eventToast.classList.remove("hidden");
+    setTimeout(() => dom.eventToast.classList.add("hidden"), 5000);
+    log(`🌟 Seasonal: ${match.name} — ${match.desc}`, "system-msg");
+    addJournalEntry(`${match.icon} Seasonal event: ${match.name}`);
+    SFX.event();
+    updateStats(); updateFace();
+  }
+
+  // ── Rock Stack Mini-game ───────────────────────────────────
+  let stackActive = false, stackCount = 0, stackLives = 3, stackCursorAnim = null;
+  let stackPos = 0, stackDir = 1, stackSpeed = 3, stackTapWindow = false, stackZoneWidth = 0.45;
+
+  function openRockStack() {
+    stackActive = false; stackCount = 0; stackLives = 3; stackSpeed = 3; stackZoneWidth = 0.45;
+    dom.stackCount.textContent = "0";
+    dom.stackLives.innerHTML = "❤️❤️❤️";
+    dom.stackStatus.textContent = "Tap when the arrow is in the zone!";
+    dom.stackResult.classList.add("hidden");
+    dom.stackTap.classList.remove("hidden");
+    dom.stackTap.disabled = false;
+    dom.stackModal.classList.remove("hidden");
+    focusFirstInModal(dom.stackModal);
+    startStackCursor();
+  }
+
+  function startStackCursor() {
+    if (stackCursorAnim) clearInterval(stackCursorAnim);
+    stackPos = 0; stackDir = 1;
+    const lane = dom.stackModal.querySelector("#stack-lane");
+    const laneWidth = (lane && lane.offsetWidth) ? lane.offsetWidth : 280;
+    stackActive = true;
+    stackCursorAnim = setInterval(() => {
+      stackPos += stackDir * stackSpeed;
+      if (stackPos >= laneWidth - 20) { stackPos = laneWidth - 20; stackDir = -1; }
+      if (stackPos <= 0) { stackPos = 0; stackDir = 1; }
+      dom.stackCursor.style.left = stackPos + "px";
+      const hw = laneWidth * stackZoneWidth / 2;
+      const mid = laneWidth / 2;
+      stackTapWindow = stackPos >= (mid - hw) && stackPos <= (mid + hw);
+      dom.stackTarget.style.opacity = stackTapWindow ? "1" : "0.3";
+    }, 16);
+  }
+
+  function endRockStack() {
+    stackActive = false;
+    if (stackCursorAnim) { clearInterval(stackCursorAnim); stackCursorAnim = null; }
+    dom.stackTap.disabled = true;
+    dom.stackTap.classList.add("hidden");
+    dom.stackResult.classList.remove("hidden");
+    state.totalRockStacks = (state.totalRockStacks || 0) + 1;
+    state.totalPlays++;
+    const xpGain = stackCount * 6 + 8;
+    addXP(xpGain);
+    state.stats.happiness = clamp(state.stats.happiness + Math.min(30, stackCount * 4));
+    state.stats.bond = clamp(state.stats.bond + Math.min(12, stackCount));
+    const isNewStackBest = stackCount > 0 && stackCount > (state.highestStackCount || 0);
+    if (isNewStackBest) state.highestStackCount = stackCount;
+    const stackBestTag = state.highestStackCount > 0
+      ? (isNewStackBest ? " 🏅 New best!" : ` (best: ${state.highestStackCount})`)
+      : "";
+    dom.stackOutcome.textContent = stackCount >= 8
+      ? `Incredible! ${stackCount} rocks stacked! 🏆${stackBestTag}`
+      : stackCount >= 5
+        ? `Nice! ${stackCount} rocks stacked! 👍${stackBestTag}`
+        : stackCount >= 2
+          ? `${stackCount} rocks — keep practicing!${stackBestTag}`
+          : `${stackCount} rock — the tower toppled!`;
+    dom.stackStatus.textContent = "Done!";
+    if (stackCount >= 1) grantSticker("s_rockstack");
+    log(`Rock Stack: ${stackCount} stacked! +${xpGain} XP`, "action-msg");
+    addJournalEntry(`Played Rock Stack — stacked ${stackCount} rocks!`);
+    (stackCount >= 3 ? SFX.win : SFX.lose)();
+    if (stackCount >= 3) { flashScreen("rgba(107,203,119,0.28)"); spawnBurst(["�","✨","⭐"], 10); }
+    updateStats(); updateFace(); checkAchievements(); checkDailyChallenges();
+  }
+
+  // ── Onboarding ────────────────────────────
+  function showOnboarding() {
+    if (state.tutorialSeen) return;
+    const overlay = document.createElement("div");
+    overlay.id = "onboarding-overlay";
+    overlay.className = "onboarding-overlay";
+    const steps = [
+      { icon: "👋", title: `Meet ${state.name}!`, body: "This little rock is your new best friend. Let's learn the basics!" },
+      { icon: "🤚", title: "Tap to Interact", body: "Tap your rock anytime to say hi! It loves the attention." },
+      { icon: "🍪", title: "Keep it Happy", body: "Feed it, play games, pet it, and chat to keep its stats high." },
+      { icon: "🏆", title: "Level Up!", body: "Earn XP for everything you do. Level up to unlock cool skins, eyes & scenes!" },
+    ];
+    let step = 0;
+    const render = () => {
+      const s = steps[step];
+      overlay.innerHTML = `
+        <div class="onboarding-card">
+          <div class="onboarding-icon">${s.icon}</div>
+          <h2 class="onboarding-title">${s.title}</h2>
+          <p class="onboarding-body">${s.body}</p>
+          <div class="onboarding-dots">${steps.map((_,i) => `<span class="ob-dot${i===step?" active":""}"></span>`).join("")}</div>
+          <button class="onboarding-btn">${step < steps.length - 1 ? "Next →" : "Let's Go! 🪨"}</button>
+        </div>`;
+      overlay.querySelector(".onboarding-btn").addEventListener("click", () => {
+        if (step < steps.length - 1) { step++; render(); }
+        else { state.tutorialSeen = true; save(); overlay.remove(); }
+      });
+    };
+    render();
+    document.body.appendChild(overlay);
   }
 
   // ── Init ───────────────────────────────────────────────────
@@ -1782,16 +2331,24 @@
     }
     checkUnlocks();
     initCapacitorLifecycle();
-    // New systems
+    // Streak, daily event, seasonal event
     checkStreak();
     checkDailyEvent();
+    checkSeasonalEvent();
+    // Daily challenges
+    refreshDailyChallenges();
+    renderChallenges();
+    // Ambient sound
     if (state.ambientOn) startAmbient();
     dom.streakDisplay.textContent = state.streak;
+    // Onboarding for new players
+    if (!state.tutorialSeen) setTimeout(showOnboarding, 1200);
 
     setInterval(statDecay, 5000);
     setInterval(idleThoughts, 15000);
     setInterval(ageUp, 5000);
     setInterval(checkCriticalStats, 10000);
+    setInterval(() => { checkDailyChallenges(); renderChallenges(); }, 8000);
     setInterval(save, 30000);
     window.addEventListener("beforeunload", save);
   }
