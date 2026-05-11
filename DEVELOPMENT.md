@@ -8,7 +8,7 @@ Technical reference for developing and extending Pebble Pal.
 
 Pebble Pal is a **single-page web app** wrapped in platform-specific shells:
 
-```
+```text
 ┌──────────────────────────────────────────────────┐
 │                    game.js                        │  Game logic, state machine
 │                   style.css                       │  Visual styling, animations
@@ -26,7 +26,9 @@ The game logic is **100% vanilla JS** with no frameworks or build tools. The sam
 ## File Reference
 
 ### `index.html` (197 lines)
+
 Main game structure. Key sections:
+
 - **Header** — Name display, rename button (with `aria-label`), age, level, XP bar
 - **Left panel** — Stats bars (5 stats with `role="progressbar"` and `aria-valuenow`) + achievement trophy grid + stickers grid + daily challenges panel
 - **Center** — Rock stage with environment layer, rock body, face, accessories, thought bubble (`aria-live="polite"`), particles
@@ -36,7 +38,9 @@ Main game structure. Key sections:
 - **Security** — Content Security Policy meta tag, `viewport-fit=cover`
 
 ### `style.css` (~640 lines)
+
 All visuals and animations. Key sections:
+
 - **Layout** — 3-column CSS Grid (`210px | 1fr | 240px`), responsive breakpoint at 600px → single-column
 - **Rock rendering** — Radial gradients using CSS custom properties (`--rock-color`, `--rock-highlight`, `--rock-shadow`)
 - **Face system** — `.eye`, `.pupil`, `#mouth` with state classes (`.face-happy`, `.face-sad`, `.face-sleeping`, `.face-excited`, `.face-love`)
@@ -51,10 +55,11 @@ All visuals and animations. Key sections:
 - **Reduced motion** — `@media(prefers-reduced-motion:reduce)` disables all animations and transitions
 
 ### `game.js` (~2357 lines)
+
 All game logic in an IIFE (`"use strict"`). Key sections:
 
 | Section | Description |
-|---------|-------------|
+| ------- | ----------- |
 | State object | All mutable game state (stats, unlocks, counters, timestamps, daily challenges) |
 | DOM cache | Query selectors cached at startup |
 | Data: Skins | 15 rock skins with color definitions (unlocks up to level 50) |
@@ -95,16 +100,21 @@ All game logic in an IIFE (`"use strict"`). Key sections:
 | Init | Load → setup → render → start all intervals → init eye tracking + challenges |
 
 ### `main.js` (172 lines)
+
 Electron main process:
+
 - **Window config** — 1150×780, min 800×600, dark background, sandboxed
 - **App menu** — Game (Reset Rock, Quit), View (Reload, DevTools, Zoom, Fullscreen), Help (How to Play, About)
 - **Security** — Context isolation, no node integration, external links open in browser
 
 ### `preload.js` (15 lines)
+
 Exposes `window.pebblePal.platform` and `window.pebblePal.version` via context bridge.
 
 ### `capacitor.config.json`
+
 Mobile configuration:
+
 - Bundle ID: `com.pebblepal.app`
 - Web directory: `www/`
 - iOS: automatic content inset, dark background
@@ -117,24 +127,28 @@ Mobile configuration:
 All state lives in a single `state` object and is persisted to `localStorage` as JSON. Save key: `pebblePalState2`.
 
 ### Key State Properties
+
 - `lastSaved` — timestamp used for time-away stat decay on reload
 - `lastCustomizeXP` — timestamp throttling customization XP to once per 5 seconds
 - `actionCooldown` — runtime flag, reset to `false` on load to prevent stale persistence
 
 ### Time-Away Decay
+
 When the game loads, it compares `Date.now()` with `state.lastSaved`. If more than ~6 minutes have passed, stats decay by up to 40 points proportional to hours away (3 per hour for happiness, 3.6 for fullness, 1.5 for energy, 2.4 for cleanliness).
 
 ### Stat Decay Rates (per 5s tick)
+
 | Stat | Awake Decay | Sleeping |
-|------|-------------|----------|
+| ---- | ----------- | -------- |
 | Happiness | −0.8 | — |
 | Fullness | −0.5 | −0.3 |
 | Energy | −0.4 | +2.0 (recovery) |
 | Cleanliness | −0.3 | — |
 
 ### XP Awards
+
 | Action | XP |
-|--------|----|
+| ------ | -- |
 | Click rock | 1 |
 | Change skin/eyes/accessory/scene | 1 (5s cooldown) |
 | Talk | 3 |
@@ -155,53 +169,71 @@ When the game loads, it compares `Date.now()` with `state.lastSaved`. If more th
 ## Adding New Content
 
 ### Adding a New Skin
+
 In `game.js`, add to the `SKINS` object:
+
 ```javascript
 myskin: { label: "My Skin", color: "#hex", hi: "#hex", sh: "#hex", unlock: { level: N } },
 ```
 
 ### Adding a New Eye Style
+
 1. Add to the `EYE_STYLES` object in `game.js`:
+
 ```javascript
 myeye: { label: "My Eyes", css: "eyes-myeye", unlock: { level: N } },
 ```
-2. Add CSS in `style.css`:
+
+1. Add CSS in `style.css`:
+
 ```css
 .eyes-myeye .pupil { /* custom pupil styling */ }
 ```
 
 ### Adding a Daily Challenge
+
 Add to the `CHALLENGE_POOL` array in `game.js`:
+
 ```javascript
 { id: "my_challenge", icon: "🎯", name: "Challenge Name", desc: "Do the thing N times",
   type: "counter", statKey: "totalFeeds", target: N, xpReward: 20 },
 ```
+
 Supported types: `"counter"` (uses `state[statKey]`), `"stat"` (uses `state.stats[statKey]`), `"special"` (manual `dc.specialProgress`).
 
 ### Adding a New Accessory
+
 1. Add to the `ACCESSORIES` object in `game.js` with inline SVG:
+
 ```javascript
 myacc: { label: "My Acc", target: "head", unlock: { level: N },
   svg: `<svg viewBox="0 0 W H" width="W" height="H">...</svg>` },
 ```
-2. Add CSS positioning in `style.css`:
+
+1. Add CSS positioning in `style.css`:
+
 ```css
 #accessory-display.acc-myacc { top: -Npx; left: 50%; transform: translateX(-50%); }
 ```
 
 ### Adding a New Achievement
+
 Add to the `ACHIEVEMENTS` array:
+
 ```javascript
 { id: "my_ach", icon: "🏅", name: "My Achievement", desc: "Do the thing", check: () => state.someCounter >= N },
 ```
 
 ### Adding a New Background
+
 1. Add to `BACKGROUNDS` object in `game.js`
-2. Add CSS environment styles in `style.css` (gradient on `#env-layer`, decorative pseudo-elements)
-3. Optionally add JS particle spawner in `game.js`
+1. Add CSS environment styles in `style.css` (gradient on `#env-layer`, decorative pseudo-elements)
+1. Optionally add JS particle spawner in `game.js`
 
 ### Adding a New Food
+
 Add to the `FOODS` object:
+
 ```javascript
 myfood: { label: "🍕 My Food", fullness: N, happiness: N, energy: N, msg: "Yum!", unlock: { level: N } },
 ```
@@ -213,6 +245,7 @@ myfood: { label: "🍕 My Food", fullness: N, happiness: N, energy: N, msg: "Yum
 The `www/` directory is synced from root files via `npm run copy:web`. Both root and `www/` now share the same codebase — mobile-specific features (custom rename dialog, touch events, visibility save, viewport-fit, safe areas) are included in the root files.
 
 ### Key Mobile-Ready Features (in root files)
+
 - `viewport-fit=cover` for iOS safe areas
 - Content Security Policy meta tag
 - Custom rename dialog (replaces `prompt()` which doesn't work in Capacitor’s WKWebView)
@@ -238,23 +271,27 @@ The `www/` directory is synced from root files via `npm run copy:web`. Both root
 ## Debugging
 
 ### Desktop (Electron)
+
 - **View → Toggle DevTools** in the app menu (or `Ctrl+Shift+I`)
 - Console, network, and element inspector all available
 - **View → Reload** to refresh without restarting
 
 ### iOS (Capacitor)
+
 - Run in Xcode on simulator or device
 - Open Safari → Develop → [Device] → [Page] for Web Inspector
 - Requires "Web Inspector" enabled in iOS Settings → Safari → Advanced
 
 ### Android (Capacitor)
+
 - Run in Android Studio on emulator or device
 - Open `chrome://inspect` in Chrome on your computer
 - Select the WebView to open DevTools
 
 ### Common Issues
+
 | Problem | Solution |
-|---------|----------|
+| ------- | -------- |
 | Stats not updating visually | Check that `updateStats()` is called after modifying `state.stats` |
 | Accessory not showing | Verify CSS positioning class exists for the accessory ID |
 | Save not loading | Check `localStorage.getItem("pebblePalState2")` in console |
