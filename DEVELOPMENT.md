@@ -25,7 +25,7 @@ The game logic is **100% vanilla JS** with no frameworks or build tools. The sam
 
 ## File Reference
 
-### `index.html` (197 lines)
+### `index.html` (385 lines)
 
 Main game structure. Key sections:
 
@@ -34,10 +34,10 @@ Main game structure. Key sections:
 - **Center** — Rock stage with environment layer, rock body, face, accessories, thought bubble (`aria-live="polite"`), particles
 - **Right panel** — Action buttons (8 actions), food picker, and customize panel (4 tabs with `role="tablist"`: Skin/Eyes/Hats/Scene)
 - **Message log** — Scrollable event log at bottom (`role="log"`, `aria-live="polite"`)
-- **Modals** — 5 mini-game modals (RPS, Stone Skip, Gem Match, Earthquake, Rock Stack), achievement toast (`role="alert"`), level-up overlay, confirm dialog
+- **Modals** — 5 mini-game modals (RPS, Stone Skip, Gem Match, Earthquake, Rock Stack), journal, settings, exported-card preview, achievement toast (`role="alert"`), level-up overlay, confirm dialog (all `role="dialog" aria-modal="true"`)
 - **Security** — Content Security Policy meta tag, `viewport-fit=cover`
 
-### `style.css` (~640 lines)
+### `style.css` (~720 lines)
 
 All visuals and animations. Key sections:
 
@@ -54,7 +54,7 @@ All visuals and animations. Key sections:
 - **Mobile responsive** — `@media(max-width:600px)` stacks layout, shrinks rock, compacts buttons into 4-column grid, reduces font sizes
 - **Reduced motion** — `@media(prefers-reduced-motion:reduce)` disables all animations and transitions
 
-### `game.js` (~2357 lines)
+### `game.js` (~2820 lines)
 
 All game logic in an IIFE (`"use strict"`). Key sections:
 
@@ -99,7 +99,7 @@ All game logic in an IIFE (`"use strict"`). Key sections:
 | Save/Load | localStorage persistence with time-away decay and cooldown reset |
 | Init | Load → setup → render → start all intervals → init eye tracking + challenges |
 
-### `main.js` (172 lines)
+### `main.js` (171 lines)
 
 Electron main process:
 
@@ -107,7 +107,7 @@ Electron main process:
 - **App menu** — Game (Reset Rock, Quit), View (Reload, DevTools, Zoom, Fullscreen), Help (How to Play, About)
 - **Security** — Context isolation, no node integration, external links open in browser
 
-### `preload.js` (15 lines)
+### `preload.js` (16 lines)
 
 Exposes `window.pebblePal.platform` and `window.pebblePal.version` via context bridge.
 
@@ -130,26 +130,34 @@ All state lives in a single `state` object and is persisted to `localStorage` as
 
 - `lastSaved` — timestamp used for time-away stat decay on reload
 - `lastCustomizeXP` — timestamp throttling customization XP to once per 5 seconds
+- `lastAgeXP` — local date of the last daily age XP grant
+- `accessories` — `{ head, face }`; two independent slots, one item each (pre-slot saves are migrated on load)
+- `records` — personal bests surfaced on the game picker (`skip`, `stack`, `gemTime`, `quakeSurvived`, `rpsWinStreak`, `rpsBestStreak`)
 - `actionCooldown` — runtime flag, reset to `false` on load to prevent stale persistence
 
 ### Time-Away Decay
 
-When the game loads, it compares `Date.now()` with `state.lastSaved`. If more than ~6 minutes have passed, stats decay by up to 40 points proportional to hours away (3 per hour for happiness, 3.6 for fullness, 1.5 for energy, 2.4 for cleanliness).
+When the game loads, it compares `Date.now()` with `state.lastSaved`. If more than ~6 minutes have passed, stats decay using the same per-hour rates as the on-screen tick (36 happiness, 29 fullness, 22 energy, 14 cleanliness, 7 bond), capped at 45 points per stat.
 
 ### Stat Decay Rates (per 5s tick)
 
 | Stat | Awake Decay | Sleeping |
 | ---- | ----------- | -------- |
-| Happiness | −0.8 | — |
-| Fullness | −0.5 | −0.3 |
-| Energy | −0.4 | +2.0 (recovery) |
-| Cleanliness | −0.3 | — |
+| Happiness | −0.05 | — |
+| Fullness | −0.04 | −0.05 |
+| Energy | −0.03 | +0.5 (recovery) |
+| Cleanliness | −0.02 | — |
+| Bond | −0.01 | — |
+
+Per tick values are deliberately small so a full stat bar lasts roughly 3 in-game
+hours — matching the "low-maintenance pet" positioning. Keep `statDecay()` and the
+time-away decay in `load()` in sync when tuning.
 
 ### XP Awards
 
 | Action | XP |
 | ------ | -- |
-| Click rock | 1 |
+| Click rock | 1 (max once per 5 seconds) |
 | Change skin/eyes/accessory/scene | 1 (5s cooldown) |
 | Talk | 3 |
 | Sleep | 3 |
@@ -162,9 +170,16 @@ When the game loads, it compares `Date.now()` with `state.lastSaved`. If more th
 | RPS game | 6 |
 | Achievement unlocked | 15 |
 | Daily challenge completed | 15–35 |
-| Age tick (daily) | 2 |
+| Age tick (max once per day) | 2 |
 
 ---
+
+### Collection Sheet
+
+`openCollection("trophies" | "stickers")` renders the detail sheet. Achievements only
+expose a boolean `check()`, so `ACH_PROGRESS` maps each achievement id to a
+`[stateKey, target]` pair used for the progress bar; add an entry there when you add an
+achievement. Special keys: `stats.*`, `stickers`, `journal`, `skins`.
 
 ## Adding New Content
 

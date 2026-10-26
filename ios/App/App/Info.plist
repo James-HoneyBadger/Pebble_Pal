@@ -30,7 +30,7 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
@@ -51,6 +51,9 @@
 	<!-- iPad pointer support -->
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Only uses standard/exempt encryption (HTTPS) — skips the upload question -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<!-- Photo library: needed only if user saves rock card to Camera Roll -->
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Pebble Pal would like to save your rock card to Photos.</string>

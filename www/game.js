@@ -11,7 +11,7 @@
     stats: { happiness: 80, fullness: 70, energy: 100, cleanliness: 90, bond: 10 },
     xp: 0,
     level: 1,
-    accessory: "none",
+    accessories: { head: "none", face: "none" },
     skin: "granite",
     eyeStyle: "normal",
     background: "default",
@@ -58,6 +58,10 @@
     highestSkipCount: 0,
     highestStackCount: 0,
     totalRockStacks: 0,
+    // Personal bests shown in the game picker
+    records: { skip: 0, stack: 0, gemTime: null, quakeSurvived: 0, rpsWinStreak: 0, rpsBestStreak: 0 },
+    // Day (toDateString) of the last daily age XP grant
+    lastAgeXP: null,
     // Seasonal
     seasonalEventSeen: {},
   };
@@ -82,7 +86,7 @@
     messages: $("#messages"),
     foodPicker: $("#food-picker"), foodOptions: $("#food-options"),
     skinOptions: $("#skin-options"), eyeOptions: $("#eye-options"),
-    accOptions: $("#accessory-options"), bgOptions: $("#bg-options"),
+    headOptions: $("#head-options"), faceOptions: $("#face-options"), bgOptions: $("#bg-options"),
     achievementsList: $("#achievements-list"), trophyCount: $("#trophy-count"),
     stickersList: $("#stickers-list"), stickerCount: $("#sticker-count"),
     minigameModal: $("#minigame-modal"), rpsChoices: $("#rps-choices"),
@@ -127,6 +131,9 @@
     exportCardBtn: $("#export-card-btn"), openJournalBtn: $("#open-journal-btn"),
     resetSaveBtn: $("#reset-save-btn"),
     exportCanvas: $("#export-canvas"),
+    cardModal: $("#card-modal"), cardPreview: $("#card-preview"), cardClose: $("#card-close"),
+    collectionModal: $("#collection-modal"), collectionList: $("#collection-list"),
+    collectionClose: $("#collection-close"),
     streakToast: $("#streak-toast"), streakText: $("#streak-text"),
     // Game picker
     gamePicker: $("#game-picker"), rpsGame: $("#rps-game"),
@@ -435,10 +442,14 @@
   // ── XP & Leveling ─────────────────────────────────────────
   function addXP(amount) {
     state.xp += amount;
-    const needed = xpForLevel(state.level);
-    if (state.xp >= needed) {
-      state.xp -= needed;
+    // A single large award can carry more than one level — drain the whole overhang.
+    let leveledUp = false;
+    while (state.xp >= xpForLevel(state.level)) {
+      state.xp -= xpForLevel(state.level);
       state.level++;
+      leveledUp = true;
+    }
+    if (leveledUp) {
       dom.levelDisplay.textContent = state.level;
       log(`🎉 LEVEL UP! You are now level ${state.level}!`, "xp-msg");
       showThought(`Level ${state.level}! I'm evolving! ...sort of!`, 4000);
@@ -503,6 +514,9 @@
       log(`🔓 New unlocks: ${newUnlocks.join(", ")}`, "xp-msg");
       renderPickers();
     }
+    // Milestone stickers are level-gated, so they belong here (previously unobtainable)
+    if (state.level >= 30) grantSticker("s_level30");
+    if (state.level >= 50) grantSticker("s_level50");
   }
 
   // ── Achievements ───────────────────────────────────────────
@@ -534,11 +548,14 @@
     _lastAchCount = state.achievementsUnlocked.length;
     dom.achievementsList.innerHTML = "";
     for (const ach of ACHIEVEMENTS) {
-      const d = document.createElement("div");
       const unlocked = state.achievementsUnlocked.includes(ach.id);
+      const d = document.createElement("button");
+      d.type = "button";
       d.className = `trophy ${unlocked ? "unlocked" : "locked"}`;
       d.textContent = ach.icon;
       d.dataset.tip = unlocked ? ach.name : "???";
+      d.setAttribute("aria-label", unlocked ? ach.name : "Locked trophy — open collection for details");
+      d.onclick = () => openCollection("trophies");
       dom.achievementsList.appendChild(d);
     }
     dom.trophyCount.textContent = `${state.achievementsUnlocked.length}/${ACHIEVEMENTS.length}`;
@@ -571,11 +588,16 @@
     return mood;
   }
 
+  const FACE_STATE_CLASSES = ["face-sleeping", "face-excited", "face-happy", "face-sad"];
+  const EYE_STYLE_CLASSES = Object.values(EYE_STYLES).map(e => e.css).filter(Boolean);
+
   function updateFace() {
     const mood = updateMood();
-    // Keep eye style class, clear face states
-    const eyeClass = EYE_STYLES[state.eyeStyle]?.css || "";
-    dom.rockBody.className = eyeClass;
+    // Toggle only the face classes — assigning className would drop skin classes
+    // such as .rainbow-skin that are owned by updateSkin().
+    dom.rockBody.classList.remove(...EYE_STYLE_CLASSES, ...FACE_STATE_CLASSES);
+    const eyeClass = EYE_STYLES[state.eyeStyle]?.css;
+    if (eyeClass) dom.rockBody.classList.add(eyeClass);
     if (state.isSleeping) { dom.rockBody.classList.add("face-sleeping"); return; }
     switch (mood) {
       case "ecstatic": dom.rockBody.classList.add("face-excited"); break;
@@ -603,17 +625,17 @@
   }
 
   function updateAccessory() {
-    const acc = ACCESSORIES[state.accessory] || ACCESSORIES.none;
     dom.accessoryDisplay.className = "hidden"; dom.accessoryDisplay.innerHTML = "";
     dom.faceAccessory.className = "hidden"; dom.faceAccessory.innerHTML = "";
-    if (state.accessory !== "none" && acc.svg) {
-      if (acc.target === "face") {
-        dom.faceAccessory.innerHTML = acc.svg;
-        dom.faceAccessory.className = `acc-${state.accessory}`;
-      } else {
-        dom.accessoryDisplay.innerHTML = acc.svg;
-        dom.accessoryDisplay.className = `acc-${state.accessory}`;
-      }
+    const head = ACCESSORIES[state.accessories.head];
+    if (state.accessories.head !== "none" && head && head.svg) {
+      dom.accessoryDisplay.innerHTML = head.svg;
+      dom.accessoryDisplay.className = `acc-${state.accessories.head}`;
+    }
+    const face = ACCESSORIES[state.accessories.face];
+    if (state.accessories.face !== "none" && face && face.svg) {
+      dom.faceAccessory.innerHTML = face.svg;
+      dom.faceAccessory.className = `acc-${state.accessories.face}`;
     }
   }
 
@@ -726,24 +748,38 @@
     }
   }
 
+  // Accessories are worn one per slot, so the same art yields many more looks.
+  const ACCESSORY_SLOTS = [
+    { key: "head", label: "Head", box: () => dom.headOptions },
+    { key: "face", label: "Face", box: () => dom.faceOptions },
+  ];
+
   function renderAccPicker() {
-    dom.accOptions.innerHTML = "";
-    for (const [id, acc] of Object.entries(ACCESSORIES)) {
-      const unlocked = state.accessoriesUnlocked.includes(id);
-      const btn = document.createElement("button");
-      btn.className = `picker-btn${state.accessory === id ? " active" : ""}${!unlocked ? " locked" : ""}`;
-      btn.textContent = acc.label + (!unlocked ? ` 🔒 Lv${acc.unlock?.level || "?"}` : "");
-      btn.onclick = () => {
-        if (!unlocked) { showThought(`Unlock at level ${acc.unlock?.level}!`); return; }
-        state.accessory = id; updateAccessory(); renderAccPicker();
-        if (id !== "none") {
-          showThought("Looking good!"); log(`Equipped ${acc.label}`, "action-msg");
-        } else {
-          showThought("Au naturel!"); log("Removed accessory", "action-msg");
-        }
-        state.stats.happiness = clamp(state.stats.happiness + 2); grantCustomizeXP();
-      };
-      dom.accOptions.appendChild(btn);
+    for (const slot of ACCESSORY_SLOTS) {
+      const box = slot.box();
+      if (!box) continue;
+      box.innerHTML = "";
+      const ids = ["none", ...Object.keys(ACCESSORIES).filter(id => id !== "none" && ACCESSORIES[id].target === slot.key)];
+      for (const id of ids) {
+        const acc = ACCESSORIES[id] || { label: "None", unlock: null };
+        const locked = id !== "none" && !state.accessoriesUnlocked.includes(id);
+        const equipped = state.accessories[slot.key] === id;
+        const btn = document.createElement("button");
+        btn.className = `picker-btn${equipped ? " active" : ""}${locked ? " locked" : ""}`;
+        btn.textContent = acc.label + (locked ? ` 🔒 Lv${acc.unlock?.level || "?"}` : "");
+        btn.setAttribute("aria-pressed", equipped ? "true" : "false");
+        btn.onclick = () => {
+          if (locked) { showThought(`Unlock at level ${acc.unlock?.level}!`); return; }
+          state.accessories[slot.key] = id; updateAccessory(); renderAccPicker();
+          if (id === "none") {
+            showThought("Au naturel!"); log(`Removed ${slot.label.toLowerCase()} accessory`, "action-msg");
+          } else {
+            showThought("Looking good!"); log(`Equipped ${acc.label}`, "action-msg");
+          }
+          state.stats.happiness = clamp(state.stats.happiness + 2); grantCustomizeXP();
+        };
+        box.appendChild(btn);
+      }
     }
   }
 
@@ -800,7 +836,7 @@
 
   // ── Particles ──────────────────────────────────────────────
   function spawnParticle(emoji, x, y) {
-    if (!state.particlesOn) return;
+    if (!state.particlesOn || prefersReducedMotion()) return;
     const el = document.createElement("div");
     el.className = "particle"; el.textContent = emoji;
     const dx = (Math.random() - 0.5) * 60;
@@ -815,7 +851,7 @@
     for (let i = 0; i < n; i++) setTimeout(() => spawnParticle(emoji), i * 130);
   }
   function spawnBurst(emojis, count, cx, cy) {
-    if (!state.particlesOn) return;
+    if (!state.particlesOn || prefersReducedMotion()) return;
     const arr = Array.isArray(emojis) ? emojis : [emojis];
     const ox = cx != null ? cx : window.innerWidth / 2;
     const oy = cy != null ? cy : 200;
@@ -837,6 +873,7 @@
     }
   }
   function flashScreen(color = "rgba(255,215,0,0.35)") {
+    if (prefersReducedMotion()) return;
     const el = document.createElement("div");
     el.className = "screen-flash";
     el.style.background = color;
@@ -891,9 +928,14 @@
     }, i * 200);
   }
 
+  // ── Accessibility: reduced motion ──────────────────────────
+  const reducedMotionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+  const prefersReducedMotion = () => !!(reducedMotionQuery && reducedMotionQuery.matches);
+
   // ── Sound Effects ──────────────────────────────────────────
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   let audioCtx = null;
+  let _userActivated = false;
   function getAudioCtx() {
     if (!audioCtx) { try { audioCtx = new AudioCtx(); } catch(e) {} }
     return audioCtx;
@@ -901,6 +943,7 @@
 
   // Haptic feedback — Capacitor Haptics on iOS, Web Vibration on Android
   function haptic(intensity = "light") {
+    if (!_userActivated) return; // vibrate()/impact() are ignored (and log errors) before first input
     try {
       if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
         const H = window.Capacitor.Plugins.Haptics;
@@ -956,7 +999,20 @@
     stack:    () => { haptic("medium");  playTone(620,"sine",0.06,0.18,0.005); setTimeout(()=>playTone(820,"sine",0.09,0.15,0.005),70); },
     evolution:() => { haptic("heavy");   [261,329,392,523,659,784,1047].forEach((f,i)=>setTimeout(()=>playChord([f,Math.round(f*1.26)],"sine",0.22,0.18,0.015),i*90)); },
     challenge:() => { haptic("success"); playChord([523,659],"triangle",0.1,0.13,0.01); setTimeout(()=>playChord([659,784,1047],"triangle",0.16,0.14,0.008),140); },
+    music:    () => { haptic("light"); playMelody(); },
   };
+
+  // A short pentatonic run so the Music action is audible, ending on a chord.
+  function playMelody() {
+    if (!state.sfxOn) return;
+    const scale = [392, 440, 494, 587, 659, 784, 880];
+    const step = 170;
+    for (let i = 0; i < 7; i++) {
+      const f = scale[(i * 2 + Math.floor(Math.random() * 2)) % scale.length];
+      setTimeout(() => playTone(f, "triangle", 0.16, 0.15, 0.01), i * step);
+    }
+    setTimeout(() => playChord([523, 659, 784], "triangle", 0.34, 0.13, 0.01), 7 * step);
+  }
 
   let ambientNode = null, ambientGain = null, _ambientNodes = [];
   function startAmbient() {
@@ -1098,11 +1154,14 @@
     _lastStickerCount = state.stickersCollected.length;
     dom.stickersList.innerHTML = "";
     for (const sticker of STICKERS) {
-      const d = document.createElement("div");
       const has = state.stickersCollected.includes(sticker.id);
+      const d = document.createElement("button");
+      d.type = "button";
       d.className = `trophy sticker ${has ? "unlocked" : "locked"}`;
       d.textContent = sticker.icon;
       d.dataset.tip = has ? sticker.name : "???";
+      d.setAttribute("aria-label", has ? sticker.name : "Locked sticker — open collection for details");
+      d.onclick = () => openCollection("stickers");
       dom.stickersList.appendChild(d);
     }
     dom.stickerCount.textContent = `${state.stickersCollected.length}/${STICKERS.length}`;
@@ -1135,6 +1194,104 @@
     focusFirstInModal(dom.journalModal);
   }
 
+  // ── Collection (trophies & stickers) ───────────────────────
+  // Achievements store only a boolean check(); this maps each one to a counter
+  // so the collection sheet can show real progress.
+  const ACH_PROGRESS = {
+    first_feed: ["totalFeeds", 1], feed_10: ["totalFeeds", 10], feed_50: ["totalFeeds", 50], feed_100: ["totalFeeds", 100],
+    first_pet: ["totalPets", 1], pet_50: ["totalPets", 50], pet_100: ["totalPets", 100],
+    first_play: ["totalPlays", 1], play_50: ["totalPlays", 50],
+    rps_win_5: ["rpsWins", 5],
+    first_walk: ["totalWalks", 1], walk_20: ["totalWalks", 20], walk_50: ["totalWalks", 50],
+    polish_10: ["totalCleans", 10], music_10: ["totalMusics", 10], talk_20: ["totalTalks", 20],
+    bond_50: ["stats.bond", 50], bond_max: ["stats.bond", 100],
+    level_5: ["level", 5], level_10: ["level", 10], level_20: ["level", 20],
+    level_30: ["level", 30], level_50: ["level", 50],
+    interactions_100: ["totalInteractions", 100], interactions_500: ["totalInteractions", 500],
+    age_7: ["age", 7], age_30: ["age", 30], age_100: ["age", 100],
+    streak_3: ["streak", 3], streak_7: ["streak", 7], streak_14: ["streak", 14],
+    evolution_1: ["evolutionStage", 1],
+    stickers_5: ["stickers", 5], journal_5: ["journal", 5], challenge_7: ["challengesCompleted", 7],
+    rock_stack: ["totalRockStacks", 1], all_skins: ["skins", 8],
+  };
+
+  function achievementValue(key) {
+    if (key === "stickers") return state.stickersCollected.length;
+    if (key === "journal") return state.journalEntries.length;
+    if (key === "skins") return state.skinsUnlocked.length;
+    if (key.startsWith("stats.")) return state.stats[key.slice(6)] || 0;
+    return state[key] || 0;
+  }
+
+  function collectionRow({ icon, title, desc, how, unlocked, progress }) {
+    const row = document.createElement("div");
+    row.className = `collection-row ${unlocked ? "unlocked" : "locked"}`;
+    const ic = document.createElement("span");
+    ic.className = "cr-icon"; ic.textContent = unlocked ? icon : "❔";
+    const body = document.createElement("div");
+    body.className = "cr-body";
+    const h = document.createElement("div");
+    h.className = "cr-title"; h.textContent = title + (unlocked ? " ✓" : "");
+    const p = document.createElement("div");
+    p.className = "cr-desc"; p.textContent = desc;
+    body.append(h, p);
+    if (how) {
+      const w = document.createElement("div");
+      w.className = "cr-how"; w.textContent = `How: ${how}`;
+      body.appendChild(w);
+    }
+    if (progress && !unlocked) {
+      const wrap = document.createElement("div");
+      wrap.className = "challenge-bar-wrap";
+      const bar = document.createElement("div");
+      bar.className = "challenge-bar";
+      bar.style.width = Math.min(100, (progress.current / progress.target) * 100) + "%";
+      wrap.appendChild(bar);
+      const txt = document.createElement("div");
+      txt.className = "challenge-progress";
+      txt.textContent = `${Math.min(Math.floor(progress.current), progress.target)}/${progress.target}`;
+      body.append(wrap, txt);
+    }
+    row.append(ic, body);
+    return row;
+  }
+
+  let _collectTab = "trophies";
+
+  function openCollection(tab = "trophies") {
+    _collectTab = tab;
+    renderCollection();
+    dom.collectionModal.classList.remove("hidden");
+    focusFirstInModal(dom.collectionModal);
+  }
+
+  function renderCollection() {
+    if (!dom.collectionList) return;
+    $$("#collection-modal .tab-btn").forEach((b) => {
+      const on = b.dataset.collect === _collectTab;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    dom.collectionList.innerHTML = "";
+    if (_collectTab === "trophies") {
+      for (const ach of ACHIEVEMENTS) {
+        const unlocked = state.achievementsUnlocked.includes(ach.id);
+        const spec = ACH_PROGRESS[ach.id];
+        dom.collectionList.appendChild(collectionRow({
+          icon: ach.icon, title: ach.name, desc: ach.desc, unlocked,
+          progress: spec ? { current: achievementValue(spec[0]), target: spec[1] } : null,
+        }));
+      }
+    } else {
+      for (const sticker of STICKERS) {
+        dom.collectionList.appendChild(collectionRow({
+          icon: sticker.icon, title: sticker.name, desc: sticker.desc, how: sticker.how,
+          unlocked: state.stickersCollected.includes(sticker.id),
+        }));
+      }
+    }
+  }
+
   // ── Export Card ────────────────────────────────────────────
   function exportRockCard() {
     const canvas = dom.exportCanvas;
@@ -1146,7 +1303,11 @@
     ctx.fillStyle = grad; ctx.fillRect(0, 0, 400, 220);
     // Border
     ctx.strokeStyle = "rgba(233,69,96,0.6)"; ctx.lineWidth = 2;
-    ctx.roundRect(4, 4, 392, 212, 16); ctx.stroke();
+    // roundRect() is Safari 16.4+; the app supports iOS 15, so fall back to a square frame.
+    ctx.beginPath();
+    if (typeof ctx.roundRect === "function") ctx.roundRect(4, 4, 392, 212, 16);
+    else ctx.rect(4, 4, 392, 212);
+    ctx.stroke();
     // Rock emoji (large)
     ctx.font = "80px serif"; ctx.textAlign = "center";
     ctx.fillText("🪨", 90, 135);
@@ -1165,11 +1326,41 @@
     ctx.font = "11px sans-serif"; ctx.fillStyle = "rgba(160,160,176,0.5)";
     ctx.textAlign = "center"; ctx.fillText("🪨 My Pebble Pal", 200, 205);
     // Download
-    const link = document.createElement("a");
-    link.download = `${state.name}_rock_card.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
     grantSticker("s_card");
+    deliverCard(canvas);
+  }
+
+  // Hand the PNG to the platform: share sheet where it exists, an on-screen
+  // preview (long-press to save) inside the mobile WebViews, download on desktop.
+  async function deliverCard(canvas) {
+    const fileName = `${String(state.name).replace(/[^\w-]+/g, "_") || "pebble"}_rock_card.png`;
+    const dataUrl = canvas.toDataURL("image/png");
+    if (navigator.canShare) {
+      try {
+        const base64 = dataUrl.split(",")[1];
+        const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+        const file = new File([bytes], fileName, { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: `${state.name}'s Rock Card` });
+          log("📸 Rock card shared!", "system-msg");
+          return;
+        }
+      } catch (e) {
+        // User cancelled or share failed — fall through to the preview.
+      }
+    }
+    if (window.Capacitor) {
+      dom.cardPreview.src = dataUrl;
+      dom.cardPreview.alt = `${state.name}'s rock card`;
+      dom.cardModal.classList.remove("hidden");
+      focusFirstInModal(dom.cardModal);
+      log("📸 Rock card ready — long-press it to save.", "system-msg");
+      return;
+    }
+    const link = document.createElement("a");
+    link.download = fileName;
+    link.href = dataUrl;
+    link.click();
     log("📸 Rock card exported!", "system-msg");
   }
 
@@ -1187,8 +1378,30 @@
 
   // ── Mini-game: Stone Skip ──────────────────────────────────
   let skipActive = false, skipCount = 0, skipCursorAnim = null, skipTapWindow = false, skipEndTimeout = null;
+  let skipSpeed = 3, skipZoneHalf = 0.15, skipCombo = 0;
+  const SKIP_BASE_SPEED = 3, SKIP_MAX_SPEED = 10;
+  const SKIP_BASE_ZONE = 0.15, SKIP_MIN_ZONE = 0.05;
+
+  let skipEndAt = 0;
+  function resetSkipDifficulty() {
+    skipSpeed = SKIP_BASE_SPEED;
+    skipZoneHalf = SKIP_BASE_ZONE;
+    skipCombo = 0;
+  }
+  function scheduleSkipEnd(ms) {
+    if (skipEndTimeout) clearTimeout(skipEndTimeout);
+    skipEndAt = Date.now() + ms;
+    skipEndTimeout = setTimeout(() => endSkipGame(), Math.max(0, ms));
+  }
+  function shaveSkipTime(ms) {
+    if (!skipEndTimeout) return;
+    const remaining = Math.max(0, skipEndAt - Date.now() - ms);
+    scheduleSkipEnd(remaining);
+  }
+
   function openStoneSkip() {
     skipActive = false; skipCount = 0;
+    resetSkipDifficulty();
     dom.stoneskipCount.textContent = "0";
     dom.stoneskipStatus.textContent = "Watch the cursor — tap when it's in the zone!";
     dom.stoneskipResult.classList.add("hidden");
@@ -1201,23 +1414,23 @@
 
   function startSkipCursor() {
     if (skipCursorAnim) clearInterval(skipCursorAnim);
-    let pos = 0, dir = 1, speed = 3;
+    let pos = 0, dir = 1;
     const laneWidth = dom.stoneskipModal.querySelector("#stoneskip-lane").offsetWidth || 280;
     skipActive = true;
     skipCursorAnim = setInterval(() => {
-      pos += dir * speed;
+      pos += dir * skipSpeed;
       if (pos >= laneWidth - 20) { pos = laneWidth - 20; dir = -1; }
       if (pos <= 0) { pos = 0; dir = 1; }
       dom.stoneskipCursor.style.left = pos + "px";
-      // Target zone: middle 30%
-      const zoneStart = laneWidth * 0.35, zoneEnd = laneWidth * 0.65;
-      skipTapWindow = pos >= zoneStart && pos <= zoneEnd;
+      // The zone starts at ±15% and narrows as the run gets longer.
+      const half = laneWidth * skipZoneHalf;
+      const mid = laneWidth / 2;
+      skipTapWindow = pos >= mid - half && pos <= mid + half;
       dom.stoneskipTarget.style.opacity = skipTapWindow ? "1" : "0.4";
       dom.stoneskipTarget.classList.toggle("lit", skipTapWindow);
     }, 16);
     // Auto-end after 8 seconds (cancel any stale timer from Play Again)
-    if (skipEndTimeout) clearTimeout(skipEndTimeout);
-    skipEndTimeout = setTimeout(() => endSkipGame(), 8000);
+    scheduleSkipEnd(8000);
   }
 
   function endSkipGame() {
@@ -1232,10 +1445,13 @@
     addXP(xpGain);
     state.stats.happiness = clamp(state.stats.happiness + skipCount * 3);
     state.stats.bond = clamp(state.stats.bond + skipCount);
-    const isNewSkipBest = skipCount > 0 && skipCount > (state.highestSkipCount || 0);
-    if (isNewSkipBest) state.highestSkipCount = skipCount;
-    const skipBestTag = state.highestSkipCount > 0
-      ? (isNewSkipBest ? " 🏅 New best!" : ` (best: ${state.highestSkipCount})`)
+    const isNewSkipBest = skipCount > 0 && skipCount > (state.records.skip || 0);
+    if (isNewSkipBest) {
+      state.records.skip = skipCount;
+      state.highestSkipCount = Math.max(state.highestSkipCount || 0, skipCount);
+    }
+    const skipBestTag = state.records.skip > 0
+      ? (isNewSkipBest ? " 🏅 New best!" : ` (best: ${state.records.skip})`)
       : "";
     dom.stoneskipOutcome.textContent = skipCount >= 10
       ? `Amazing! ${skipCount} skips! ${state.name} is thrilled!${skipBestTag}`
@@ -1248,22 +1464,35 @@
     log(`Stone Skip: ${skipCount} skips! +${xpGain} XP`, "action-msg");
     addJournalEntry(`Played Stone Skip — ${skipCount} skips!`);
     (skipCount >= 5 ? SFX.win : SFX.lose)();
-    if (skipCount >= 5) { flashScreen("rgba(107,203,119,0.28)"); spawnBurst(["💧","✨","�"], 10); }
+    if (skipCount >= 5) { flashScreen("rgba(107,203,119,0.28)"); spawnBurst(["💧","✨","🌊"], 10); }
     updateStats(); updateFace(); checkAchievements(); checkDailyChallenges();
   }
 
   // ── Mini-game: Gem Match ───────────────────────────
   const GEM_ICONS = ["💎","🔮","💠","🔷","🟣","🟡","🟢","🔴"];
   let gemCards = [], gemFlipped = [], gemMatched = [], gemLocked = false, gemStartTime = 0;
+  let gemPairs = 4, gemMoves = 0;
+
+  // Bigger boards as the rock levels up, so the game keeps scaling.
+  function gemPairCount() {
+    if (state.level >= 30) return 8;
+    if (state.level >= 15) return 6;
+    return 4;
+  }
 
   function openGemMatch() {
-    gemCards = []; gemFlipped = []; gemMatched = []; gemLocked = false;
-    dom.gemmatchStatus.textContent = "Tap cards to find pairs!";
+    gemCards = []; gemFlipped = []; gemMatched = []; gemLocked = false; gemMoves = 0;
+    gemPairs = gemPairCount();
+    dom.gemmatchStatus.textContent = `Find ${gemPairs} pairs!`;
     dom.gemmatchGrid.innerHTML = "";
     dom.gemmatchModal.classList.remove("hidden");
-    // Pick 4 pairs (8 cards)
-    const icons = GEM_ICONS.slice(0, 4);
-    const deck = [...icons, ...icons].sort(() => Math.random() - 0.5);
+    const icons = GEM_ICONS.slice(0, gemPairs);
+    const deck = [...icons, ...icons];
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    dom.gemmatchGrid.style.gridTemplateColumns = `repeat(${Math.min(gemPairs, 4)}, 1fr)`;
     deck.forEach((icon, i) => {
       const card = document.createElement("button");
       card.className = "gem-card";
@@ -1285,18 +1514,20 @@
     SFX.tap();
     if (gemFlipped.length === 2) {
       gemLocked = true;
+      gemMoves++;
       const [a, b] = gemFlipped;
       if (gemCards[a].dataset.icon === gemCards[b].dataset.icon) {
         gemMatched.push(a, b);
         gemCards[a].classList.add("matched"); gemCards[b].classList.add("matched");
         gemFlipped = []; gemLocked = false;
-        dom.gemmatchStatus.textContent = `${gemMatched.length / 2} / 4 pairs matched!`;
-        if (gemMatched.length === 8) endGemMatch();
+        dom.gemmatchStatus.textContent = `${gemMatched.length / 2} / ${gemPairs} pairs matched · ${gemMoves} moves`;
+        if (gemMatched.length === gemPairs * 2) endGemMatch();
       } else {
         setTimeout(() => {
           gemCards[a].textContent = "?"; gemCards[a].classList.remove("flipped");
           gemCards[b].textContent = "?"; gemCards[b].classList.remove("flipped");
           gemFlipped = []; gemLocked = false;
+          dom.gemmatchStatus.textContent = `${gemMatched.length / 2} / ${gemPairs} pairs matched · ${gemMoves} moves`;
         }, 800);
       }
     }
@@ -1305,14 +1536,19 @@
   function endGemMatch() {
     const elapsed = (Date.now() - gemStartTime) / 1000;
     state.totalPlays++;
-    addXP(25);
-    state.stats.happiness = clamp(state.stats.happiness + 20);
-    state.stats.bond = clamp(state.stats.bond + 8);
-    dom.gemmatchStatus.textContent = `All matched in ${elapsed.toFixed(1)}s! +25 XP!`;
+    const xpGain = 10 + gemPairs * 5;
+    addXP(xpGain);
+    state.stats.happiness = clamp(state.stats.happiness + 10 + gemPairs * 3);
+    state.stats.bond = clamp(state.stats.bond + 4 + gemPairs);
+    const prevBest = state.records.gemTime;
+    const isBest = prevBest == null || elapsed < prevBest;
+    if (isBest) state.records.gemTime = Number(elapsed.toFixed(1));
+    const bestTag = isBest ? " 🏅 New best time!" : (prevBest != null ? ` (best: ${prevBest}s)` : "");
+    dom.gemmatchStatus.textContent = `All ${gemPairs} pairs in ${elapsed.toFixed(1)}s · ${gemMoves} moves · +${xpGain} XP${bestTag}`;
     grantSticker("s_gems");
     if (elapsed < 30) grantSticker("s_gems_fast");
-    log(`Gem Match: all matched in ${elapsed.toFixed(1)}s! +25 XP`, "action-msg");
-    addJournalEntry(`Won Gem Match in ${elapsed.toFixed(1)} seconds!`);
+    log(`Gem Match: ${gemPairs} pairs in ${elapsed.toFixed(1)}s (${gemMoves} moves) +${xpGain} XP`, "action-msg");
+    addJournalEntry(`Won Gem Match — ${gemPairs} pairs in ${elapsed.toFixed(1)} seconds!`);
     SFX.win();
     flashScreen("rgba(100,150,255,0.28)");
     spawnBurst(["💎","✨","🔮"], 10);
@@ -1321,12 +1557,14 @@
 
   // ── Mini-game: Earthquake Survival ────────────────────────
   let quakeTimer = null, quakeStarted = false, quakeFailed = false, quakeProgress = 0;
+  let quakeWobbles = 0, quakeLastWobble = 0;
+  const QUAKE_MAX_WOBBLES = 2;
   let quakeMouseHandler = null, quakeTouchHandler = null;
 
   function openQuake() {
-    quakeStarted = false; quakeFailed = false; quakeProgress = 0;
+    quakeStarted = false; quakeFailed = false; quakeProgress = 0; quakeWobbles = 0;
     dom.quakeBar.style.width = "0%";
-    dom.quakeStatus.textContent = "Press Start then HOLD STILL!";
+    dom.quakeStatus.textContent = `Press Start — then hold perfectly still!`;
     dom.quakeResult.classList.add("hidden");
     dom.quakeStart.classList.remove("hidden");
     dom.quakeRockIcon.style.animation = "";
@@ -1335,19 +1573,34 @@
   }
 
   function startQuake() {
-    quakeStarted = true; quakeFailed = false; quakeProgress = 0;
+    quakeStarted = true; quakeFailed = false; quakeProgress = 0; quakeWobbles = 0;
+    quakeLastWobble = 0;
     dom.quakeStart.classList.add("hidden");
-    dom.quakeStatus.textContent = "Hold still... 🫨";
+    dom.quakeStatus.textContent = `Hold still! ${QUAKE_MAX_WOBBLES} wobbles allowed.`;
     dom.quakeRockIcon.style.animation = "quake-shake 0.1s infinite";
-    quakeProgress = 0;
+    dom.quakeBar.style.width = "0%";
     quakeTimer = setInterval(() => {
       quakeProgress += 2;
       dom.quakeBar.style.width = quakeProgress + "%";
       if (quakeProgress >= 100) endQuake(true);
     }, 100);
-    // Fail if user moves mouse/touches inside the modal
-    quakeMouseHandler = () => { if (quakeStarted && !quakeFailed) endQuake(false); };
-    quakeTouchHandler = () => { if (quakeStarted && !quakeFailed) endQuake(false); };
+    // A wobble costs 20% progress instead of ending the round outright.
+    const wobble = () => {
+      if (!quakeStarted || quakeFailed) return;
+      const now = Date.now();
+      if (now - quakeLastWobble < 300) return;
+      quakeLastWobble = now;
+      quakeWobbles++;
+      if (quakeWobbles > QUAKE_MAX_WOBBLES) { endQuake(false); return; }
+      quakeProgress = Math.max(0, quakeProgress - 20);
+      dom.quakeBar.style.width = quakeProgress + "%";
+      dom.quakeStatus.textContent = `Wobble! ${QUAKE_MAX_WOBBLES - quakeWobbles} left`;
+      dom.quakeBar.classList.add("wobble");
+      setTimeout(() => dom.quakeBar.classList.remove("wobble"), 320);
+      SFX.tapMiss();
+    };
+    quakeMouseHandler = wobble;
+    quakeTouchHandler = wobble;
     dom.quakeModal.addEventListener("mousemove", quakeMouseHandler);
     dom.quakeModal.addEventListener("touchmove", quakeTouchHandler);
   }
@@ -1355,20 +1608,24 @@
   function endQuake(survived) {
     quakeStarted = false;
     clearInterval(quakeTimer);
-    dom.quakeModal.removeEventListener("mousemove", quakeMouseHandler);
-    dom.quakeModal.removeEventListener("touchmove", quakeTouchHandler);
+    if (quakeMouseHandler) dom.quakeModal.removeEventListener("mousemove", quakeMouseHandler);
+    if (quakeTouchHandler) dom.quakeModal.removeEventListener("touchmove", quakeTouchHandler);
+    quakeMouseHandler = quakeTouchHandler = null;
     dom.quakeRockIcon.style.animation = "";
     dom.quakeResult.classList.remove("hidden");
     dom.quakeStart.classList.add("hidden");
     state.totalPlays++;
     if (survived) {
-      dom.quakeOutcome.textContent = `${state.name} survived! Amazing stillness! +20 XP`;
+      state.records.quakeSurvived = (state.records.quakeSurvived || 0) + 1;
+      dom.quakeOutcome.textContent = quakeWobbles === 0
+        ? `${state.name} survived without a single wobble! Perfect stillness! +20 XP`
+        : `${state.name} survived ${quakeWobbles} wobble${quakeWobbles > 1 ? "s" : ""}! +20 XP`;
       dom.quakeStatus.textContent = "You did it!";
       addXP(20);
       state.stats.happiness = clamp(state.stats.happiness + 15);
       state.stats.bond = clamp(state.stats.bond + 6);
       grantSticker("s_quake");
-      log("Earthquake Survival: SURVIVED! +20 XP", "action-msg");
+      log(`Earthquake Survival: survived with ${quakeWobbles} wobble(s)! +20 XP`, "action-msg");
       addJournalEntry("Survived the earthquake!");
       SFX.win();
     } else {
@@ -1407,8 +1664,30 @@
   // ── Cooldown ───────────────────────────────────────────────
   function startCooldown(ms = 1500) {
     state.actionCooldown = true;
-    $$(".action-btn").forEach(b => b.disabled = true);
-    setTimeout(() => { state.actionCooldown = false; $$(".action-btn").forEach(b => b.disabled = false); }, ms);
+    $$(".action-btn").forEach(b => {
+      b.disabled = true;
+      b.classList.add("cooldown");
+      b.style.setProperty("--cd", ms + "ms");
+    });
+    setTimeout(() => {
+      state.actionCooldown = false;
+      $$(".action-btn").forEach(b => {
+        b.disabled = false;
+        b.classList.remove("cooldown");
+        b.style.removeProperty("--cd");
+      });
+    }, ms);
+  }
+
+  // Explain a blocked action and point at the button that unblocks it.
+  function nudge(text, actionName) {
+    log(text, "warning-msg");
+    showThought(text, 2500);
+    const btn = actionName && $(`[data-action="${actionName}"]`);
+    if (btn) {
+      btn.classList.add("nudge");
+      setTimeout(() => btn.classList.remove("nudge"), 1400);
+    }
   }
 
   // ── Modal Helpers ──────────────────────────────────────────
@@ -1443,6 +1722,22 @@
     dom.minigameBack.classList.add("hidden");
     dom.minigameTitle.textContent = `Play with ${state.name}!`;
     dom.minigameDesc.textContent = "Choose a game:";
+    refreshGamePicker();
+  }
+
+  // Per-game personal bests on the picker, so progress is visible before playing.
+  function refreshGamePicker() {
+    const r = state.records || {};
+    const set = (game, text) => {
+      const el = document.querySelector(`.gp-meta[data-meta="${game}"]`);
+      if (el) el.textContent = text;
+    };
+    set("rps", state.rpsPlayed ? `${state.rpsWins}W · ${state.rpsPlayed - state.rpsWins}L` : "costs 8 ⚡");
+    set("stoneskip", r.skip ? `best ${r.skip} skips` : "8 second run");
+    set("gemmatch", r.gemTime != null ? `best ${r.gemTime}s` : `${gemPairCount()} pairs`);
+    set("quake", r.quakeSurvived ? `survived ${r.quakeSurvived}×` : "hold still");
+    set("rockstack", r.stack ? `best ${r.stack} rocks` : "3 lives");
+    renderRpsRecord();
   }
 
   // ── Actions ────────────────────────────────────────────────
@@ -1459,7 +1754,7 @@
     animateRock("anim-jelly");
     spawnMulti("🪨", 3);
     showThought(food.msg);
-    log(`You fed ${state.name} ${food.label.replace(/^.+\s/, "")}`, "action-msg");
+    log(`You fed ${state.name} ${food.label.replace(/^\S+\s/, "")}`, "action-msg");
     dom.foodPicker.classList.add("hidden");
     showStatFloater(`+${food.fullness} 🍔`, "#6bcb77");
     if (food.happiness > 5) showStatFloater(`+${food.happiness} 😊`, "#ffd93d");
@@ -1484,7 +1779,7 @@
     },
     play() {
       if (state.isSleeping) { showThought("Zzz... too sleepy..."); return; }
-      if (state.stats.energy < 10) { showThought("Too tired to play..."); log(`${state.name} is too tired!`, "warning-msg"); return; }
+      if (state.stats.energy < 10) { nudge("Too tired to play — try a nap first 💤", "sleep"); return; }
       // Show game picker
       dom.minigameRockName.textContent = state.name;
       dom.gamePicker.classList.remove("hidden");
@@ -1492,6 +1787,7 @@
       dom.minigameBack.classList.add("hidden");
       dom.minigameTitle.textContent = `Play with ${state.name}!`;
       dom.minigameDesc.textContent = "Choose a game:";
+      refreshGamePicker();
       dom.minigameModal.classList.remove("hidden");
       focusFirstInModal(dom.minigameModal);
     },
@@ -1554,7 +1850,7 @@
     },
     exercise() {
       if (state.isSleeping) { showThought("Zzz... carry me later..."); return; }
-      if (state.stats.energy < 15) { showThought("Too tired for a walk..."); return; }
+      if (state.stats.energy < 15) { nudge("Too tired for a walk — a nap would help 💤", "sleep"); return; }
       state.stats.energy = clamp(state.stats.energy - 12);
       state.stats.happiness = clamp(state.stats.happiness + 10);
       state.stats.bond = clamp(state.stats.bond + 4);
@@ -1577,6 +1873,7 @@
       dom.rock.classList.add("anim-dance");
       setTimeout(() => dom.rock.classList.remove("anim-dance"), 2400);
       spawnMusicNotes();
+      SFX.music();
       showStatFloater("+12 😊", "#ffd93d");
       showStatFloater("-5 ⚡", "#4d96ff");
       const msg = pick(dialogue.music); showThought(msg);
@@ -1586,9 +1883,20 @@
   };
 
   // ── RPS ────────────────────────────────────────────────────
+  function renderRpsRecord() {
+    const el = $("#rps-record");
+    if (!el) return;
+    const r = state.records;
+    const played = state.rpsPlayed || 0;
+    el.textContent = played === 0
+      ? "First match — good luck!"
+      : `Record ${state.rpsWins}–${played - state.rpsWins} · streak ${r.rpsWinStreak} (best ${r.rpsBestStreak})`;
+  }
+
   function playRPS(playerChoice) {
-    const choices = ["rock", "paper", "scissors"];
-    const rockChoice = choices[Math.floor(Math.random() * 3)];
+    // The rock has a documented soft spot for rock — learning the bias is the strategy layer.
+    const roll = Math.random();
+    const rockChoice = roll < 0.5 ? "rock" : roll < 0.75 ? "paper" : "scissors";
     const emojis = { rock: "🪨", paper: "📄", scissors: "✂️" };
     dom.rpsChoices.classList.add("hidden"); dom.rpsResult.classList.remove("hidden");
     dom.rpsYou.textContent = `You chose: ${emojis[playerChoice]} ${playerChoice}`;
@@ -1598,18 +1906,23 @@
     state.rpsPlayed++;
     if (playerChoice === rockChoice) {
       outcome = "It's a tie! 🤝"; state.stats.happiness = clamp(state.stats.happiness + 5);
+      state.records.rpsWinStreak = 0;
     } else if (
       (playerChoice === "rock" && rockChoice === "scissors") ||
       (playerChoice === "paper" && rockChoice === "rock") ||
       (playerChoice === "scissors" && rockChoice === "paper")
     ) {
       outcome = "You win! 🎉"; state.stats.happiness = clamp(state.stats.happiness + 10); state.rpsWins++; grantSticker("s_rps_win");
+      state.records.rpsWinStreak = (state.records.rpsWinStreak || 0) + 1;
+      state.records.rpsBestStreak = Math.max(state.records.rpsBestStreak || 0, state.records.rpsWinStreak);
     } else {
       outcome = `${state.name} wins! 🪨💪`; state.stats.happiness = clamp(state.stats.happiness + 3);
+      state.records.rpsWinStreak = 0;
     }
     state.stats.energy = clamp(state.stats.energy - 8);
     state.stats.bond = clamp(state.stats.bond + 5);
     dom.rpsOutcome.textContent = outcome;
+    renderRpsRecord();
     log(`RPS: ${outcome}`, "action-msg");
     if (rockChoice === "rock") log(`${state.name}: "I always pick rock. Obviously."`, "rock-msg");
     addXP(6); updateStats(); updateFace(); startCooldown(); checkAchievements(); checkDailyChallenges();
@@ -1617,15 +1930,17 @@
 
   // ── Decay ──────────────────────────────────────────────────
   function statDecay() {
+    // Rates are per 5s tick and mirror the per-hour offline rates in load()
+    // (~36 happiness/hour), so in-app and time-away decay feel the same.
     if (state.isSleeping) {
-      state.stats.energy = clamp(state.stats.energy + 2);
-      state.stats.fullness = clamp(state.stats.fullness - 0.3);
+      state.stats.energy = clamp(state.stats.energy + 0.5);
+      state.stats.fullness = clamp(state.stats.fullness - 0.05);
     } else {
-      state.stats.happiness = clamp(state.stats.happiness - 0.8);
-      state.stats.fullness = clamp(state.stats.fullness - 0.5);
-      state.stats.energy = clamp(state.stats.energy - 0.4);
-      state.stats.cleanliness = clamp(state.stats.cleanliness - 0.3);
-      state.stats.bond = clamp(state.stats.bond - 0.1);
+      state.stats.happiness = clamp(state.stats.happiness - 0.05);
+      state.stats.fullness = clamp(state.stats.fullness - 0.04);
+      state.stats.energy = clamp(state.stats.energy - 0.03);
+      state.stats.cleanliness = clamp(state.stats.cleanliness - 0.02);
+      state.stats.bond = clamp(state.stats.bond - 0.01);
     }
     updateStats(); updateFace();
   }
@@ -1650,14 +1965,15 @@
   }
 
   // ── Age ────────────────────────────────────────────────────
-  let _lastAgeXP = 0;
   function ageUp() {
     if (state.createdAt) {
       state.age = Math.floor((Date.now() - state.createdAt) / 86400000);
     }
     dom.ageDisplay.textContent = state.age;
-    const now = Date.now();
-    if (now - _lastAgeXP >= 60000) { _lastAgeXP = now; addXP(2); }
+    // One small grant per day played (previously fired every minute, which made
+    // levelling passive).
+    const today = new Date().toDateString();
+    if (state.lastAgeXP !== today) { state.lastAgeXP = today; addXP(2); }
     checkAchievements();
   }
 
@@ -1670,7 +1986,7 @@
   }
 
   // ── Rock Click ─────────────────────────────────────────────
-  let _lastRockClick = 0;
+  let _lastRockClick = 0, _lastRockClickXP = 0;
   function onRockClick() {
     const now = Date.now();
     if (now - _lastRockClick < 500) return;
@@ -1687,7 +2003,9 @@
     pick(reactions)();
     state.stats.happiness = clamp(state.stats.happiness + 1);
     state.stats.bond = clamp(state.stats.bond + 1);
-    addXP(1); updateStats(); updateFace(); checkAchievements();
+    // Taps are a reward, not an XP farm: at most one XP per 5 seconds.
+    if (now - _lastRockClickXP >= 5000) { _lastRockClickXP = now; addXP(1); }
+    updateStats(); updateFace(); checkAchievements();
   }
 
   // ── Events ─────────────────────────────────────────────────
@@ -1711,7 +2029,7 @@
     dom.settingsBtn.addEventListener("click", openSettings);
 
     // Tabs — ARIA & keyboard navigation
-    const tabBtns = [...$$(".tab-btn")];
+    const tabBtns = [...$$(".tab-btn[data-tab]")];
     tabBtns.forEach((btn, i) => {
       btn.id = btn.id || btn.dataset.tab + "-tab";
       btn.setAttribute("role", "tab");
@@ -1749,6 +2067,7 @@
           dom.rpsResult.classList.add("hidden");
           dom.minigameTitle.textContent = `Rock Paper Scissors with ${state.name}!`;
           dom.minigameDesc.textContent = "Choose your weapon:";
+          renderRpsRecord();
           dom.minigameModal.classList.remove("hidden");
           focusFirstInModal(dom.minigameModal);
         } else if (game === "stoneskip") {
@@ -1786,19 +2105,32 @@
       if (!skipActive) return;
       if (skipTapWindow) {
         SFX.tapHit();
-        skipCount++; dom.stoneskipCount.textContent = skipCount;
-        dom.stoneskipStatus.textContent = `Skip! (${skipCount})`;
+        skipCount++; skipCombo++;
+        dom.stoneskipCount.textContent = skipCount;
+        dom.stoneskipStatus.textContent = skipCombo > 1 ? `Skip! ${skipCount} (×${skipCombo} combo)` : `Skip! (${skipCount})`;
         dom.stoneskipCursor.style.background = "#6bcb77";
         setTimeout(() => dom.stoneskipCursor.style.background = "", 200);
+        // Each hit narrows the zone and speeds the cursor up.
+        skipZoneHalf = Math.max(SKIP_MIN_ZONE, SKIP_BASE_ZONE - skipCount * 0.012);
+        skipSpeed = Math.min(SKIP_MAX_SPEED, SKIP_BASE_SPEED + skipCount * 0.45);
       } else {
         SFX.tapMiss();
-        dom.stoneskipStatus.textContent = "Missed! Wait for the zone.";
+        skipCombo = 0;
+        dom.stoneskipStatus.textContent = "Missed! The stone loses momentum (−0.6s)";
         dom.stoneskipCursor.style.background = "#e94560";
         setTimeout(() => dom.stoneskipCursor.style.background = "", 200);
         animateRock("anim-hit", 450);
+        shaveSkipTime(600);
       }
     });
-    dom.stoneskipAgain.addEventListener("click", () => { dom.stoneskipResult.classList.add("hidden"); startSkipCursor(); dom.stoneskipTap.classList.remove("hidden"); dom.stoneskipTap.disabled = false; skipCount = 0; dom.stoneskipCount.textContent = "0"; });
+    dom.stoneskipAgain.addEventListener("click", () => {
+      dom.stoneskipResult.classList.add("hidden");
+      skipCount = 0; dom.stoneskipCount.textContent = "0";
+      resetSkipDifficulty();
+      dom.stoneskipStatus.textContent = "Watch the cursor — tap when it's in the zone!";
+      startSkipCursor();
+      dom.stoneskipTap.classList.remove("hidden"); dom.stoneskipTap.disabled = false;
+    });
     const closeStoneSkip = () => {
       skipActive = false;
       if (skipEndTimeout) { clearTimeout(skipEndTimeout); skipEndTimeout = null; }
@@ -1818,7 +2150,15 @@
           SFX.tapHit();
           stackCount++;
           dom.stackCount.textContent = stackCount;
-          dom.stackStatus.textContent = `Stacked! (${stackCount})`;
+          // Centre hits are "perfect" and worth a small bonus.
+          const half = (stackLaneWidth * stackZoneWidth) / 2;
+          const offCentre = Math.abs(stackPos - stackLaneWidth / 2);
+          const perfect = offCentre <= half * 0.35;
+          if (perfect) stackPerfect++;
+          // Rising pitch as the tower grows
+          playTone(560 + stackCount * 26, "sine", 0.06, 0.16, 0.005);
+          dom.stackStatus.textContent = perfect ? `Perfect! (${stackCount}) 🎯` : `Stacked! (${stackCount})`;
+          if (perfect) showStatFloater("PERFECT 🎯", "#ffd93d");
           dom.stackCursor.style.background = "#6bcb77";
           setTimeout(() => dom.stackCursor.style.background = "", 200);
           // Increase difficulty: narrow zone and speed
@@ -1838,7 +2178,7 @@
       });
       dom.stackAgain.addEventListener("click", () => {
         dom.stackResult.classList.add("hidden");
-        stackCount = 0; stackLives = 3; stackSpeed = 3; stackZoneWidth = 0.45;
+        stackCount = 0; stackLives = 3; stackSpeed = 3; stackZoneWidth = 0.45; stackPerfect = 0;
         dom.stackCount.textContent = "0"; dom.stackLives.innerHTML = "❤️❤️❤️";
         dom.stackTap.classList.remove("hidden"); dom.stackTap.disabled = false;
         dom.stackStatus.textContent = "Tap when the arrow is in the zone!";
@@ -1864,7 +2204,17 @@
     // Quake
     dom.quakeStart.addEventListener("click", startQuake);
     dom.quakeAgain.addEventListener("click", () => { dom.quakeResult.classList.add("hidden"); dom.quakeStart.classList.remove("hidden"); dom.quakeBar.style.width = "0%"; dom.quakeStatus.textContent = "Press Start then HOLD STILL!"; });
-    const closeQuakeModal = () => { clearInterval(quakeTimer); dom.quakeModal.classList.add("hidden"); };
+    const closeQuakeModal = () => {
+      // Leaving mid-round must also detach the still-listener handlers, otherwise
+      // they pile up on every subsequent play.
+      quakeStarted = false;
+      clearInterval(quakeTimer);
+      if (quakeMouseHandler) dom.quakeModal.removeEventListener("mousemove", quakeMouseHandler);
+      if (quakeTouchHandler) dom.quakeModal.removeEventListener("touchmove", quakeTouchHandler);
+      quakeMouseHandler = quakeTouchHandler = null;
+      dom.quakeRockIcon.style.animation = "";
+      dom.quakeModal.classList.add("hidden");
+    };
     dom.quakeClose.addEventListener("click", closeQuakeModal);
     $("#quake-exit-btn").addEventListener("click", closeQuakeModal);
     dom.quakeModal.addEventListener("click", e => { if (e.target === dom.quakeModal) closeQuakeModal(); });
@@ -1875,6 +2225,27 @@
     $("#journal-exit-btn").addEventListener("click", () => dom.journalModal.classList.add("hidden"));
     dom.journalModal.addEventListener("click", e => { if (e.target === dom.journalModal) dom.journalModal.classList.add("hidden"); });
     dom.journalModal.addEventListener("keydown", e => { if (e.key === "Escape") dom.journalModal.classList.add("hidden"); });
+
+    // Collection sheet (trophy / sticker detail)
+    if (dom.collectionModal) {
+      const closeCollection = () => dom.collectionModal.classList.add("hidden");
+      dom.collectionClose.addEventListener("click", closeCollection);
+      $("#collection-exit-btn").addEventListener("click", closeCollection);
+      dom.collectionModal.addEventListener("click", e => { if (e.target === dom.collectionModal) closeCollection(); });
+      dom.collectionModal.addEventListener("keydown", e => { if (e.key === "Escape") closeCollection(); });
+      $$("#collection-modal .tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => { _collectTab = btn.dataset.collect; renderCollection(); });
+      });
+    }
+
+    // Exported card preview (native save path)
+    if (dom.cardModal) {
+      const closeCard = () => dom.cardModal.classList.add("hidden");
+      dom.cardClose.addEventListener("click", closeCard);
+      $("#card-exit-btn").addEventListener("click", closeCard);
+      dom.cardModal.addEventListener("click", e => { if (e.target === dom.cardModal) closeCard(); });
+      dom.cardModal.addEventListener("keydown", e => { if (e.key === "Escape") closeCard(); });
+    }
 
     // Settings
     dom.settingsClose.addEventListener("click", () => dom.settingsModal.classList.add("hidden"));
@@ -1917,13 +2288,25 @@
         "Reset Save Data",
         "Really reset all save data?",
         "This cannot be undone — all progress will be lost.",
-        () => { localStorage.removeItem("pebblePalState2"); location.reload(); }
+        () => { resetSave(); }
       );
     });
   }
 
   // ── Save / Load ────────────────────────────────────────────
-  function save() { try { state.lastSaved = Date.now(); localStorage.setItem("pebblePalState2", JSON.stringify(state)); } catch(e){} }
+  // Set while wiping storage so the beforeunload handler can't write the old
+  // in-memory state straight back into localStorage.
+  let _resetting = false;
+  function save() {
+    if (_resetting) return;
+    try { state.lastSaved = Date.now(); localStorage.setItem("pebblePalState2", JSON.stringify(state)); } catch(e){}
+  }
+
+  function resetSave() {
+    _resetting = true;
+    try { localStorage.removeItem("pebblePalState2"); } catch(e){}
+    location.reload();
+  }
 
   function load() {
     try {
@@ -1936,20 +2319,35 @@
         }
         // Reset runtime-only flags
         state.actionCooldown = false;
+        // Migrate pre-slot saves: one accessory becomes the slot matching its target
+        if (!saved.accessories && saved.accessory && saved.accessory !== "none") {
+          const slot = ACCESSORIES[saved.accessory]?.target === "face" ? "face" : "head";
+          state.accessories = { head: "none", face: "none" };
+          state.accessories[slot] = saved.accessory;
+        }
+        // Legacy best-score fields feed the new records block
+        if (!saved.records) {
+          state.records = {
+            skip: saved.highestSkipCount || 0,
+            stack: saved.highestStackCount || 0,
+            gemTime: null, quakeSurvived: 0, rpsWinStreak: 0, rpsBestStreak: 0,
+          };
+        }
         // Compute real age from creation date
         if (state.createdAt) {
           state.age = Math.floor((Date.now() - state.createdAt) / 86400000);
         }
-        // Time-away stat decay
+        // Time-away stat decay — same hourly rates as the on-screen decay tick
         if (state.lastSaved) {
           const elapsed = (Date.now() - state.lastSaved) / 1000;
           const hours = elapsed / 3600;
           if (hours > 0.1) {
-            const decay = Math.min(hours * 3, 40);
-            state.stats.happiness = clamp(state.stats.happiness - decay);
-            state.stats.fullness = clamp(state.stats.fullness - decay * 1.2);
-            state.stats.energy = clamp(state.stats.energy - decay * 0.5);
-            state.stats.cleanliness = clamp(state.stats.cleanliness - decay * 0.8);
+            const cap = 45;
+            state.stats.happiness = clamp(state.stats.happiness - Math.min(hours * 36, cap));
+            state.stats.fullness = clamp(state.stats.fullness - Math.min(hours * 29, cap));
+            state.stats.energy = clamp(state.stats.energy - Math.min(hours * 22, cap));
+            state.stats.cleanliness = clamp(state.stats.cleanliness - Math.min(hours * 14, cap));
+            state.stats.bond = clamp(state.stats.bond - Math.min(hours * 7, cap * 0.5));
             if (hours > 1) log(`${state.name} was alone for ${Math.floor(hours)}h... stats decayed.`, "warning-msg");
           }
         }
@@ -2055,7 +2453,7 @@
   function initCapacitorLifecycle() {
     // Listen for Electron reset command via IPC
     if (window.pebblePal && window.pebblePal.onReset) {
-      window.pebblePal.onReset(() => { localStorage.removeItem("pebblePalState2"); location.reload(); });
+      window.pebblePal.onReset(() => { resetSave(); });
     }
     // Save on app backgrounding (iOS)
     document.addEventListener("visibilitychange", () => {
@@ -2066,6 +2464,62 @@
     document.addEventListener("resume", () => {
       showThought("You're back!", 3000);
     });
+  }
+
+  // ── User activation ────────────────────────────────────────
+  // Haptics/audio are blocked before the first real input, so flag it once.
+  function initUserActivation() {
+    const activate = () => { _userActivated = true; };
+    ["pointerdown", "touchstart", "keydown"].forEach((ev) =>
+      window.addEventListener(ev, activate, { capture: true, once: true, passive: true })
+    );
+  }
+
+  // ── Android hardware back ──────────────────────────────────
+  // Capacitor forwards Back to the WebView, so keep a history entry armed while a
+  // layer is open and close the top layer instead of dropping out of the app.
+  function initAndroidBack() {
+    if (!window.Capacitor) return; // packaged builds only; leave browsers alone
+    const CLOSERS = {
+      "minigame-modal": "#minigame-exit-btn",
+      "stoneskip-modal": "#stoneskip-exit-btn",
+      "gemmatch-modal": "#gemmatch-exit-btn",
+      "quake-modal": "#quake-exit-btn",
+      "rockstack-modal": "#rockstack-exit-btn",
+      "journal-modal": "#journal-exit-btn",
+      "settings-modal": "#settings-exit-btn",
+      "collection-modal": "#collection-exit-btn",
+      "card-modal": "#card-exit-btn",
+    };
+    let armed = false;
+    const arm = () => { if (!armed) { history.pushState({ pebblePalBack: true }, null); armed = true; } };
+    const topDialog = () => [...document.querySelectorAll("body > .modal")].pop() || null;
+    const openModalId = () => Object.keys(CLOSERS).find((id) => {
+      const el = document.getElementById(id);
+      return el && !el.classList.contains("hidden");
+    });
+
+    arm();
+    window.addEventListener("popstate", () => {
+      armed = false;
+      const dialog = topDialog();
+      if (dialog) { dialog.remove(); arm(); return; }
+      const id = openModalId();
+      if (id) {
+        const closer = document.querySelector(CLOSERS[id]);
+        if (closer) closer.click();
+        else document.getElementById(id).classList.add("hidden");
+        arm();
+      }
+      // Nothing open: leave `armed` false so the next Back leaves the app.
+    });
+    // Re-arm whenever a layer opens (dialogs are appended, modals toggle .hidden).
+    new MutationObserver((records) => {
+      const addedDialog = records.some((r) => [...r.addedNodes].some((n) => n.nodeType === 1 && n.classList && n.classList.contains("modal")));
+      if (addedDialog) arm();
+    }).observe(document.body, { childList: true });
+    const classObserver = new MutationObserver(() => { if (topDialog() || openModalId()) arm(); });
+    $$(".modal").forEach((m) => classObserver.observe(m, { attributes: true, attributeFilter: ["class"] }));
   }
 
   // ── Daily Challenges ──────────────────────────────────────
@@ -2210,10 +2664,11 @@
 
   // ── Rock Stack Mini-game ───────────────────────────────────
   let stackActive = false, stackCount = 0, stackLives = 3, stackCursorAnim = null;
+  let stackLaneWidth = 280, stackPerfect = 0;
   let stackPos = 0, stackDir = 1, stackSpeed = 3, stackTapWindow = false, stackZoneWidth = 0.45;
 
   function openRockStack() {
-    stackActive = false; stackCount = 0; stackLives = 3; stackSpeed = 3; stackZoneWidth = 0.45;
+    stackActive = false; stackCount = 0; stackLives = 3; stackSpeed = 3; stackZoneWidth = 0.45; stackPerfect = 0;
     dom.stackCount.textContent = "0";
     dom.stackLives.innerHTML = "❤️❤️❤️";
     dom.stackStatus.textContent = "Tap when the arrow is in the zone!";
@@ -2230,6 +2685,7 @@
     stackPos = 0; stackDir = 1;
     const lane = dom.stackModal.querySelector("#stack-lane");
     const laneWidth = (lane && lane.offsetWidth) ? lane.offsetWidth : 280;
+    stackLaneWidth = laneWidth;
     stackActive = true;
     stackCursorAnim = setInterval(() => {
       stackPos += stackDir * stackSpeed;
@@ -2251,28 +2707,32 @@
     dom.stackResult.classList.remove("hidden");
     state.totalRockStacks = (state.totalRockStacks || 0) + 1;
     state.totalPlays++;
-    const xpGain = stackCount * 6 + 8;
+    const xpGain = stackCount * 6 + stackPerfect * 2 + 8;
     addXP(xpGain);
     state.stats.happiness = clamp(state.stats.happiness + Math.min(30, stackCount * 4));
     state.stats.bond = clamp(state.stats.bond + Math.min(12, stackCount));
-    const isNewStackBest = stackCount > 0 && stackCount > (state.highestStackCount || 0);
-    if (isNewStackBest) state.highestStackCount = stackCount;
-    const stackBestTag = state.highestStackCount > 0
-      ? (isNewStackBest ? " 🏅 New best!" : ` (best: ${state.highestStackCount})`)
+    const isNewStackBest = stackCount > 0 && stackCount > (state.records.stack || 0);
+    if (isNewStackBest) {
+      state.records.stack = stackCount;
+      state.highestStackCount = Math.max(state.highestStackCount || 0, stackCount);
+    }
+    const stackBestTag = state.records.stack > 0
+      ? (isNewStackBest ? " 🏅 New best!" : ` (best: ${state.records.stack})`)
       : "";
-    dom.stackOutcome.textContent = stackCount >= 8
+    const perfectTag = stackPerfect > 0 ? ` · ${stackPerfect} perfect 🎯` : "";
+    dom.stackOutcome.textContent = (stackCount >= 8
       ? `Incredible! ${stackCount} rocks stacked! 🏆${stackBestTag}`
       : stackCount >= 5
         ? `Nice! ${stackCount} rocks stacked! 👍${stackBestTag}`
         : stackCount >= 2
           ? `${stackCount} rocks — keep practicing!${stackBestTag}`
-          : `${stackCount} rock — the tower toppled!`;
+          : `${stackCount} rock — the tower toppled!`) + perfectTag;
     dom.stackStatus.textContent = "Done!";
     if (stackCount >= 1) grantSticker("s_rockstack");
     log(`Rock Stack: ${stackCount} stacked! +${xpGain} XP`, "action-msg");
     addJournalEntry(`Played Rock Stack — stacked ${stackCount} rocks!`);
     (stackCount >= 3 ? SFX.win : SFX.lose)();
-    if (stackCount >= 3) { flashScreen("rgba(107,203,119,0.28)"); spawnBurst(["�","✨","⭐"], 10); }
+    if (stackCount >= 3) { flashScreen("rgba(107,203,119,0.28)"); spawnBurst(["🗼","✨","⭐"], 10); }
     updateStats(); updateFace(); checkAchievements(); checkDailyChallenges();
   }
 
@@ -2311,6 +2771,12 @@
   // ── Init ───────────────────────────────────────────────────
   function init() {
     load();
+    // Sleep is a foreground mechanic — always wake on launch so a stored save
+    // can never leave the rock asleep (and regenerating energy) forever.
+    if (state.isSleeping) {
+      state.isSleeping = false;
+      log(`${state.name} woke up when you came back.`, "system-msg");
+    }
     initEyeTracking();
     initEvents();
     renderPickers();
@@ -2323,14 +2789,10 @@
     updateBackground();
     updateXPBar();
     applyEvolutionShape();
-    // If was sleeping
-    if (state.isSleeping) {
-      dom.rock.classList.add("anim-sleep");
-      dom.gameContainer.classList.add("night-mode");
-      startSleepZzz();
-    }
     checkUnlocks();
     initCapacitorLifecycle();
+    initAndroidBack();
+    initUserActivation();
     // Streak, daily event, seasonal event
     checkStreak();
     checkDailyEvent();

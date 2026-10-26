@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1a2e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="format-detection" content="telephone=no">
@@ -157,7 +158,10 @@
             <div id="eye-options" class="picker-grid"></div>
           </div>
           <div id="tab-acc" class="tab-content">
-            <div id="accessory-options" class="picker-grid"></div>
+            <h3 class="slot-label">Head</h3>
+            <div id="head-options" class="picker-grid"></div>
+            <h3 class="slot-label">Face</h3>
+            <div id="face-options" class="picker-grid"></div>
           </div>
           <div id="tab-bg" class="tab-content">
             <div id="bg-options" class="picker-grid"></div>
@@ -172,16 +176,19 @@
     </div>
 
     <!-- Mini-Game Modal -->
-    <div id="minigame-modal" class="modal hidden">
+    <div id="minigame-modal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-content">
         <button class="modal-close-x" id="minigame-exit-btn" aria-label="Close">×</button>
         <h2 id="minigame-title">Pick a Game!</h2>
         <p id="minigame-desc">Choose how to play with <span id="minigame-rock-name">Rocky</span>!</p>
         <div id="game-picker">
-          <button class="game-pick-btn" data-game="rps">🪨📄✂️<br><span>Rock Paper Scissors</span></button>
-          <button class="game-pick-btn" data-game="stoneskip">🌊<br><span>Stone Skip</span></button>
-          <button class="game-pick-btn" data-game="gemmatch">💎<br><span>Gem Match</span></button>
-          <button class="game-pick-btn" data-game="quake">🌋<br><span>Earthquake!</span></button>          <button class="game-pick-btn" data-game="rockstack">🗼<br><span>Rock Stack</span></button>        </div>
+          <button class="game-pick-btn" data-game="rps">🪨📄✂️<br><span>Rock Paper Scissors</span><span class="gp-meta" data-meta="rps"></span></button>
+          <button class="game-pick-btn" data-game="stoneskip">🌊<br><span>Stone Skip</span><span class="gp-meta" data-meta="stoneskip"></span></button>
+          <button class="game-pick-btn" data-game="gemmatch">💎<br><span>Gem Match</span><span class="gp-meta" data-meta="gemmatch"></span></button>
+          <button class="game-pick-btn" data-game="quake">🌋<br><span>Earthquake!</span><span class="gp-meta" data-meta="quake"></span></button>
+          <button class="game-pick-btn" data-game="rockstack">🗼<br><span>Rock Stack</span><span class="gp-meta" data-meta="rockstack"></span></button>
+        </div>
+        <div id="rps-record" class="rps-record"></div>
         <div id="rps-game" class="hidden">
           <div id="rps-choices">
             <button class="rps-btn" data-choice="rock">🪨<br>Rock</button>
@@ -227,7 +234,7 @@
     </div>
 
     <!-- Mini-game: Stone Skip -->
-    <div id="stoneskip-modal" class="modal hidden">
+    <div id="stoneskip-modal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-content">
         <button class="modal-close-x" id="stoneskip-exit-btn" aria-label="Close">×</button>
         <h2>🌊 Stone Skip!</h2>
@@ -248,7 +255,7 @@
     </div>
 
     <!-- Mini-game: Gem Match -->
-    <div id="gemmatch-modal" class="modal hidden">
+    <div id="gemmatch-modal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-content">
         <button class="modal-close-x" id="gemmatch-exit-btn" aria-label="Close">×</button>
         <h2>💎 Gem Match!</h2>
@@ -260,7 +267,7 @@
     </div>
 
     <!-- Mini-game: Earthquake Survival -->
-    <div id="quake-modal" class="modal hidden">
+    <div id="quake-modal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-content">
         <button class="modal-close-x" id="quake-exit-btn" aria-label="Close">×</button>
         <h2>🌋 Earthquake Survival!</h2>
@@ -280,7 +287,7 @@
     </div>
 
     <!-- Mini-game: Rock Stack -->
-    <div id="rockstack-modal" class="modal hidden">
+    <div id="rockstack-modal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-content">
         <button class="modal-close-x" id="rockstack-exit-btn" aria-label="Close">×</button>
         <h2>🗼 Rock Stack!</h2>
@@ -301,7 +308,7 @@
     </div>
 
     <!-- Rock Journal Modal -->
-    <div id="journal-modal" class="modal hidden">
+    <div id="journal-modal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-content journal-content">
         <button class="modal-close-x" id="journal-exit-btn" aria-label="Close">×</button>
         <h2>📖 Rock Journal</h2>
@@ -311,7 +318,7 @@
     </div>
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="modal hidden">
+    <div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-content settings-content">
         <button class="modal-close-x" id="settings-exit-btn" aria-label="Close">×</button>
         <h2>⚙️ Settings</h2>
@@ -333,6 +340,31 @@
         <hr class="settings-hr">
         <button id="reset-save-btn" class="minigame-btn danger">🗑️ Reset Save Data</button>
         <button id="settings-close" class="minigame-btn secondary settings-close-btn">Close</button>
+      </div>
+    </div>
+
+    <!-- Collection: trophies & stickers with progress -->
+    <div id="collection-modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-content collection-content">
+        <button class="modal-close-x" id="collection-exit-btn" aria-label="Close">×</button>
+        <h2>🏆 Collection</h2>
+        <div class="tab-row" role="tablist">
+          <button class="tab-btn active" data-collect="trophies" role="tab" aria-selected="true">Trophies</button>
+          <button class="tab-btn" data-collect="stickers" role="tab" aria-selected="false">Stickers</button>
+        </div>
+        <div id="collection-list" class="collection-list"></div>
+        <button id="collection-close" class="minigame-btn secondary settings-close-btn">Close</button>
+      </div>
+    </div>
+
+    <!-- Export Card Preview (mobile save path) -->
+    <div id="card-modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-content card-content">
+        <button class="modal-close-x" id="card-exit-btn" aria-label="Close">×</button>
+        <h2>📸 Your Rock Card</h2>
+        <p class="card-hint">Long-press (or right-click) the card to save it to your photos.</p>
+        <img id="card-preview" alt="Your Pebble Pal rock card" />
+        <button id="card-close" class="minigame-btn secondary">Done</button>
       </div>
     </div>
 

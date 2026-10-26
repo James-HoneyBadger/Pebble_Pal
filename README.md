@@ -22,13 +22,15 @@ A virtual pet stone companion app — feed, play, customize, and level up your v
 - **Aging** — Your rock ages over time in day increments
 
 ### Mini-Games (5 total)
+Each game shows your personal best on the picker and rewards skill, not just taps.
+
 | Game | Description |
 |------|-------------|
-| Rock Paper Scissors | Classic RPS — your rock has biased picks |
-| Stone Skip | Tap the glowing zone in time to rack up skips |
-| Gem Match | Flip card pairs — match all 8 gems as fast as you can |
-| Earthquake Survival | Hold perfectly still while your rock trembles |
-| Rock Stack | Tap the moving bar in the green zone to stack rocks |
+| Rock Paper Scissors | Classic RPS — the rock favours rock (50%), so counter-play works |
+| Stone Skip | Tap the glowing zone; it narrows and the cursor speeds up with every skip, and a miss costs 0.6s |
+| Gem Match | Flip card pairs — 4/6/8 pairs at levels 1/15/30, with move count and best time |
+| Earthquake Survival | Hold perfectly still while your rock trembles; two wobbles cost 20% progress each before you fail |
+| Rock Stack | Tap the moving bar in the zone; centre hits score PERFECT bonuses and the pitch rises with the tower |
 
 ### Customization System
 All options are accessed via the **Customize** panel with 4 tabs:
@@ -65,7 +67,14 @@ All options are accessed via the **Customize** panel with 4 tabs:
 | Sparkle | Level 20 |
 | Diamond | Level 25 |
 
-#### Accessories (18 total, SVG-rendered)
+#### Accessories (19 total, SVG-rendered, 2 slots)
+Head and Face are independent slots, so any head item can be worn with any face item (e.g. Crown + Shades).
+
+| Slot | Items |
+|------|-------|
+| Head | Top Hat, Crown, Bow, Flower, Party Hat, Headband, Halo, Chef Hat, Headphones, Wizard Hat, Butterfly, Scarf, Pirate Hat, Space Helmet |
+| Face | Shades, Monocle, Mustache, Bowtie |
+
 | Accessory | Type | Unlock |
 |-----------|------|--------|
 | None | — | Start |
@@ -131,10 +140,11 @@ Each day 3 challenges are drawn from a pool of 15, seeded by date for consistenc
 - Gain XP from every interaction (1–15 XP depending on action)
 - Challenge completions grant bonus XP (15–35 XP per challenge)
 - Customization changes grant 1 XP with a 5-second cooldown to prevent farming
+- Tapping the rock grants 1 XP at most once every 5 seconds; the daily age tick grants 2 XP once per day
 - XP threshold increases per level: `30 + level × 20`
 - Leveling up triggers an animated overlay with burst particles and unlocks new content
 
-### Achievements (26 total)
+### Achievements (37 total)
 | Achievement | Requirement |
 |-------------|-------------|
 | 🍪 First Bite | Feed for the first time |
@@ -146,7 +156,7 @@ Each day 3 challenges are drawn from a pool of 15, seeded by date for consistenc
 | 💖 Rock Whisperer | Pet 100 times |
 | 🎾 Playtime! | Play a game |
 | 🎮 Game Master | Play 50 mini-games |
-| ✌️ RPS Champ | Win RPS 5 times |
+| ✌️ RPS Champ | Win Rock Paper Scissors 5 times |
 | 🏃 First Steps | Go for a walk |
 | 🗺️ Explorer | Walk 20 times |
 | 🌍 World Walker | Walk 50 times |
@@ -158,11 +168,29 @@ Each day 3 challenges are drawn from a pool of 15, seeded by date for consistenc
 | ⬆️ Rising Star | Reach level 5 |
 | 🌟 Veteran | Reach level 10 |
 | 👑 Legendary | Reach level 20 |
+| 💎 Diamond Tier | Reach level 30 |
+| 🌌 Galaxy Tier | Reach level 50 |
 | 💯 Centurion | 100 total interactions |
+| 🌟 Superfan | 500 total interactions |
 | 🎂 One Week | Rock is 7 days old |
 | 🏆 One Month | Rock is 30 days old |
+| 🎊 Centenarian | Rock is 100 days old |
+| 🔥 On a Roll | 3-day visit streak |
+| 🌈 Week Streak | 7-day visit streak |
+| 🏆 2-Week Warrior | 14-day visit streak |
+| ⬆️ Growing Up | Rock evolved for the first time |
+| 🌟 Collector | Collect 5 stickers |
+| 📖 Memoirs | Rock has 5 journal entries |
+| 🎨 Fashionista | Unlock 8+ skins |
 | 🗼 Rock Stacker | Play the Rock Stack game |
 | 📋 Challenge Fanatic | Complete 7 daily challenges |
+
+### Stickers (21 total)
+Awarded for mini-game wins, streaks, evolution stages, seasonal events, card exports, and challenge milestones. Level 30 and level 50 each grant a milestone sticker.
+
+### Collection sheet
+Tap any trophy or sticker to open the Collection: every entry lists what it is, how to
+earn it, and — for locked trophies — a live progress bar (e.g. `48/50` feeds).
 
 ### Audio & Visual Effects
 - **Web Audio API** — All sound effects synthesized in-browser (no audio files)

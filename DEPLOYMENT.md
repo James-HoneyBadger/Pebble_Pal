@@ -130,7 +130,7 @@ In Xcode, under **General**:
 | Bundle Identifier | com.pebblepal.app |
 | Version | 1.0.0 |
 | Build | 1 |
-| Deployment Target | iOS 16.0 |
+| Deployment Target | iOS 15.0 |
 | Device Orientation | Portrait only |
 
 ### Step 4: Create App Store Listing
@@ -160,25 +160,28 @@ Go to [App Store Connect](https://appstoreconnect.apple.com):
    - Data Collection: **No data collected** (localStorage is on-device only)
 
 6. **Screenshots** (required):
-   - 6.7" display (iPhone 15 Pro Max): 1290 × 2796 px — minimum 2 screenshots
-   - 5.5" display (iPhone 8 Plus): 1242 × 2208 px — minimum 2 screenshots
-   - Take screenshots using Xcode Simulator → File → Screenshot
+   - 6.9" display (iPhone 16/17 Pro Max): 1320 × 2868 px — minimum 2 screenshots
+   - 6.5" display (iPhone 11 Pro Max): 1242 × 2688 px — minimum 2 screenshots
+   - 13" iPad (required — the target ships as a universal app, `TARGETED_DEVICE_FAMILY = "1,2"`): 2064 × 2752 px — minimum 2 screenshots
+   - Take screenshots using the Xcode Simulator → File → New Screen Shot
 
 7. **Description**:
 ```
 Adopt your very own pet rock! 🪨
 
-Feed it minerals, play Rock Paper Scissors, dress it up with hats and accessories, 
-and watch it grow through 25 levels of customization.
+Feed it minerals, play mini-games, dress it up with hats and accessories,
+and watch it grow through 50 levels of customization.
 
 Features:
-• 10 unique rock skins to unlock
-• 13 hand-drawn accessories (hats, glasses, mustache & more)
-• 8 scenic backgrounds (space, underwater, volcano & more)  
-• 6 eye styles to personalize your rock's look
-• 8 different mineral foods to feed your rock
-• 20 achievements to earn
-• Rock Paper Scissors mini-game
+• 15 unique rock skins to unlock
+• 19 hand-drawn accessories (hats, glasses, mustache & more)
+• 13 scenic backgrounds (space, underwater, volcano & more)
+• 9 eye styles to personalize your rock's look
+• 12 different mineral foods to feed your rock
+• 37 achievements and 21 stickers to collect
+• 5 mini-games: Rock Paper Scissors, Stone Skip, Gem Match, Earthquake Survival, Rock Stack
+• Daily challenges, visit streaks and seasonal events
+• Rock journal + shareable rock card
 • Auto-save — your rock is always waiting for you
 
 The perfect low-maintenance virtual pet. Because everyone deserves a rock.
@@ -186,7 +189,7 @@ The perfect low-maintenance virtual pet. Because everyone deserves a rock.
 
 8. **Keywords**:
 ```
-pet rock, virtual pet, tamagotchi, casual game, rock paper scissors, pet game
+pet rock, virtual pet, tamagotchi, casual game, rock paper scissors, idle pet, mini games, virtual companion
 ```
 
 ### Step 5: Archive & Upload
@@ -195,7 +198,7 @@ In Xcode:
 2. **Product** → **Archive**
 3. When complete, the **Organizer** window opens
 4. Click **Distribute App** → **App Store Connect** → **Upload**
-5. Keep default options (bitcode, symbol upload)
+5. Keep the default options (symbol upload); bitcode is deprecated and no longer offered
 6. Click **Upload**
 
 ### Step 6: Submit for Review
@@ -221,8 +224,11 @@ In Xcode:
 ### Step 1: Prepare the Build
 ```bash
 npm install
-npm run android:sync
+npm run android:sync   # copies www/ and wires the Capacitor plugins into the Gradle project
 ```
+> **Required**: the generated files `android/capacitor.settings.gradle` and
+> `android/app/capacitor.build.gradle` must list `:capacitor-haptics` (and any other
+> plugin) before Gradle will build — run `android:sync` after every dependency change.
 
 ### Step 2: Create Signing Key
 Google Play requires signed apps. Generate a keystore:
@@ -241,28 +247,15 @@ keytool -genkey -v \
 > ⚠️ **CRITICAL**: Back up this keystore file and remember the password! You need it for every future update. Losing it means you can never update the app on Google Play.
 
 ### Step 3: Configure Signing
-Edit `android/app/build.gradle` and add inside the `android { }` block:
+`android/app/build.gradle` already reads a `keystore.properties` file (which is
+git-ignored). Copy the template and fill in your values:
 
-```groovy
-android {
-    signingConfigs {
-        release {
-            storeFile file('../../pebble-pal-release.keystore')
-            storePassword 'YOUR_SECURE_PASSWORD'
-            keyAlias 'pebblepal'
-            keyPassword 'YOUR_SECURE_PASSWORD'
-        }
-    }
-    buildTypes {
-        release {
-            signingConfig signingConfigs.release
-            minifyEnabled false
-        }
-    }
-}
+```bash
+cp android/keystore.properties.template android/keystore.properties
+# then edit storeFile / storePassword / keyAlias / keyPassword
 ```
 
-> **Tip**: For better security, use `gradle.properties` or environment variables instead of hardcoding passwords.
+> **Never commit** `keystore.properties` or the `.jks` file — both are already in `.gitignore`.
 
 ### Step 4: Build the Release Bundle
 ```bash
@@ -294,8 +287,8 @@ Go to [Google Play Console](https://play.google.com/console):
 2. **Store listing** (Grow → Store presence → Main store listing):
    - Short description (80 chars): `Adopt a virtual pebble pal! Feed, play, dress up & level up your rock! 🪨`
    - Full description: (same as iOS description above)
-   - **App icon**: 512 × 512 PNG (use `ios-icons/icon-1024.png` resized)
-   - **Feature graphic**: 1024 × 500 PNG (create a promotional banner)
+   - **App icon**: 512 × 512 PNG (`icons/icon.png` is already 512 × 512)
+   - **Feature graphic**: 1024 × 500 PNG (not in the repo — create a promotional banner)
    - **Screenshots**: minimum 2 phone screenshots (1080 × 1920 or similar)
    - Category: **Game → Casual**
    - Tags: Virtual pet, Rock Paper Scissors
@@ -341,7 +334,8 @@ Go to [Google Play Console](https://play.google.com/console):
 ### Step 7: Post-Release Updates
 For future updates:
 ```bash
-# 1. Update version in capacitor.config.json and build.gradle
+# 1. Bump the version: android/app/build.gradle (versionCode + versionName) and
+#    ios/App/App.xcodeproj MARKETING_VERSION / CURRENT_PROJECT_VERSION
 # 2. Rebuild
 npm run android:sync
 cd android && ./gradlew bundleRelease
@@ -353,29 +347,9 @@ cd android && ./gradlew bundleRelease
 
 ## Privacy Policy Template
 
-Both stores require a privacy policy. Here's a minimal one:
-
-```
-Privacy Policy for Pet Rock
-
-Last updated: [DATE]
-
-Pet Rock is a virtual pet game that runs entirely on your device.
-
-Data Collection: Pet Rock does not collect, transmit, or store any personal 
-information. All game data (progress, settings, statistics) is stored locally 
-on your device using standard browser storage.
-
-Third-Party Services: Pet Rock does not integrate with any third-party 
-analytics, advertising, or tracking services.
-
-Data Deletion: Uninstalling Pet Rock removes all associated data from your 
-device. On the desktop version, you can reset data via Game → Reset Rock.
-
-Contact: [YOUR EMAIL]
-```
-
-Host this on a simple webpage (GitHub Pages, personal site, etc.) and link it in both store listings.
+Both stores require a hosted URL (not a file in the repo). The text lives in
+[PRIVACY.md](./PRIVACY.md) — fill in the contact address, publish it (GitHub Pages
+works well) and paste the URL into App Store Connect and the Play Console.
 
 ---
 
@@ -384,8 +358,8 @@ Host this on a simple webpage (GitHub Pages, personal site, etc.) and link it in
 ### Apple App Store
 - [ ] Apple Developer account ($99/year)
 - [ ] Mac with Xcode
-- [ ] App icon (1024 × 1024)
-- [ ] Screenshots: 6.7" and 5.5" (minimum 2 each)
+- [ ] App icon (1024 × 1024, **opaque 8-bit RGB — no alpha channel**, or validation fails)
+- [ ] Screenshots: 6.9" and 6.5" iPhone **plus 13" iPad** (minimum 2 each)
 - [ ] Description, keywords, category
 - [ ] Privacy policy URL
 - [ ] Age rating (4+)

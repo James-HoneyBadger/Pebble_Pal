@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package com.pebblepal.app;
 
 import static org.junit.Assert.*;
 
