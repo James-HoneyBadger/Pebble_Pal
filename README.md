@@ -324,4 +324,4 @@ Pebble_Pal/
 
 ## License
 
-MIT — do whatever you want with your pebble pal. 🪨
+[MIT](LICENSE) — see the full license for permissions and conditions. 🪨
